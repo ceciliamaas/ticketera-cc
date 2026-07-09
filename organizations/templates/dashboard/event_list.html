@@ -1,0 +1,66 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Eventos — {{ organization.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Eventos de {{ organization.name }}</h2>
+    <div class="d-flex gap-2">
+        <a href="{% url 'dashboard_members' org_slug=organization.slug %}" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-users"></i> Miembros
+        </a>
+        <a href="{% url 'dashboard_event_create' org_slug=organization.slug %}" class="btn btn-success">
+            + Nuevo evento
+        </a>
+    </div>
+</div>
+
+{% if events %}
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Estado</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in events %}
+        <tr>
+            <td>{{ event.name }}</td>
+            <td>
+                {% if event.status == 'published' %}
+                    <span class="badge bg-success">Publicado</span>
+                {% else %}
+                    <span class="badge bg-secondary">Borrador</span>
+                {% endif %}
+            </td>
+            <td>{{ event.start|date:"d/m/Y H:i" }}</td>
+            <td>{{ event.end|date:"d/m/Y H:i" }}</td>
+            <td>
+                <a href="{% url 'dashboard_event_edit' org_slug=organization.slug event_id=event.pk %}"
+                   class="btn btn-sm btn-outline-primary">Editar</a>
+                {% if event.status == 'draft' %}
+                    <form method="post"
+                          action="{% url 'dashboard_event_publish' org_slug=organization.slug event_id=event.pk %}"
+                          class="d-inline">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-success">Publicar</button>
+                    </form>
+                {% else %}
+                    <form method="post"
+                          action="{% url 'dashboard_event_unpublish' org_slug=organization.slug event_id=event.pk %}"
+                          class="d-inline">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-warning">Despublicar</button>
+                    </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info">No hay eventos aún. <a href="{% url 'dashboard_event_create' org_slug=organization.slug %}">Crear el primero</a>.</div>
+{% endif %}
+{% endblock %}

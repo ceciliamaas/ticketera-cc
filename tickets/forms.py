@@ -60,7 +60,7 @@ class OrderForm(PersonForm):
     class Meta:
         model = Order
         fields = (
-            'first_name', 'last_name', 'email', 'phone', 'dni', 'donation_art', 'donation_grant', 'donation_venue',)
+            'first_name', 'last_name', 'email', 'phone', 'dni')
 
 
 class TransferForm(PersonForm):
@@ -135,7 +135,7 @@ class CheckoutTicketSelectionForm(forms.Form):
                     'field_name': field_name,
                     'quantity': initial_value,  # Pass the initial value to the template
                     'ticket_count': ticket_type.ticket_count,
-                    'is_free_ticket': ticket_type.price == 0,  # Flag to identify free tickets
+                    'is_free_ticket': False,  # Price 0 = free, never a custom amount
                     'ignore_max_amount': ticket_type.ignore_max_amount  # Flag to check if ignores max amount
                 })
         else:
@@ -188,30 +188,6 @@ class CheckoutTicketSelectionForm(forms.Form):
                     raise ValidationError(f'Debe ingresar un monto personalizado para {ticket["name"]}.')
 
         return cleaned_data
-
-
-class CheckoutDonationsForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        initial_data = kwargs.pop('initial', {})
-        super(CheckoutDonationsForm, self).__init__(*args, **kwargs)
-        self.fields['donation_art'] = forms.IntegerField(
-            label="Becas de Arte",
-            min_value=0,
-            initial=initial_data.get('donation_art', 0),
-            required=False
-        )
-        self.fields['donation_venue'] = forms.IntegerField(
-            label="Donaciones a La Sede",
-            min_value=0,
-            initial=initial_data.get('donation_venue', 0),
-            required=False
-        )
-        self.fields['donation_grant'] = forms.IntegerField(
-            label="Beca Inclusión Radical",
-            min_value=0,
-            initial=initial_data.get('donation_grant', 0),
-            required=False
-        )
 
 
 ORDER_REASON_CHOICES = [

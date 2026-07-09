@@ -10,21 +10,49 @@ from django.contrib.auth.models import User
 from auditlog.registry import auditlog
 
 from utils.models import BaseModel
+from organizations.models import Organization
 
 
 class Event(BaseModel):
+    class Status(models.TextChoices):
+        DRAFT = 'draft', 'Draft'
+        PUBLISHED = 'published', 'Published'
+
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='events',
+        null=True,
+        blank=True,
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DRAFT,
+        help_text="Draft events are not publicly visible",
+    )
     active = models.BooleanField(default=True, help_text="Event is active and can be accessed")
     is_main = models.BooleanField(default=False, help_text="Main event displayed at /")
-    slug = models.SlugField(max_length=100, unique=True, null=True, blank=True, help_text="URL-friendly identifier for the event")
+    slug = models.SlugField(max_length=100, null=True, blank=True, help_text="URL-friendly identifier for the event")
     name = models.CharField(max_length=255)
     location = models.CharField(max_length=255, blank=True, help_text="Location of the event")
     location_url = models.URLField(max_length=500, blank=True, help_text="URL for the event location (e.g. Google Maps link)")
     has_volunteers = models.BooleanField(default=False)
-    start = models.DateTimeField()
-    end = models.DateTimeField()
+    start = models.DateTimeField(verbose_name="Fecha del evento")
+    end = models.DateTimeField(null=True, blank=True, verbose_name="Fin del evento")
+    recurring_schedule = models.CharField(
+        max_length=200, blank=True,
+        verbose_name="Repetición",
+        help_text="Si el evento se repite, describí la frecuencia (ej: 'Todos los sábados 21hs'). Dejá vacío si es un evento único.",
+    )
+    is_recurring = models.BooleanField(
+        default=False,
+        verbose_name="Evento recurrente",
+        help_text="Si está marcado, cada entrada representa una función con su propia fecha.",
+    )
     max_tickets = models.IntegerField(blank=True, null=True)
     max_tickets_per_order = models.IntegerField(default=5)
-    transfers_enabled_until = models.DateTimeField()
+    transfers_enabled_until = models.DateTimeField(null=True, blank=True)
     volunteers_enabled_until = models.DateTimeField(blank=True, null=True)
     send_transfer_notifications = models.BooleanField(default=False, help_text="If checked, transfer notification emails will be sent for this event")
     ingreso_anticipado_limite_carga = models.DateTimeField(blank=True, null=True, help_text="Fecha límite hasta la cual se pueden cargar o modificar ingresos anticipados. Si es null, no hay límite.")
@@ -52,7 +80,12 @@ class Event(BaseModel):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['is_main'], condition=Q(is_main=True), name='unique_main_event')
+            models.UniqueConstraint(fields=['is_main'], condition=Q(is_main=True), name='unique_main_event'),
+            models.UniqueConstraint(fields=['organization', 'slug'], name='unique_event_slug_per_organization'),
+        ]
+        indexes = [
+            models.Index(fields=['organization']),
+            models.Index(fields=['status']),
         ]
         permissions = [
             ("view_tickets_sold_report", "Can view tickets sold report"),
@@ -71,11 +104,11 @@ class Event(BaseModel):
                         'Only one event can be the main event at a time. Please set the other main event as non-main before saving.',
                         code='not_unique'),
                 })
-        
+
         # Auto-generate slug from name if not provided
         if not self.slug and self.name:
             self.slug = slugify(self.name)
-            
+
         return super().clean(*args, **kwargs)
 
     def tickets_remaining(self):
@@ -166,14 +199,23 @@ class Event(BaseModel):
 
     @classmethod
     def get_active_events(cls):
-        """Get all active events"""
-        return cls.objects.filter(active=True)
+        """Get all publicly visible events (published + active org)."""
+        qs = cls.objects.filter(active=True, status=cls.Status.PUBLISHED)
+        # Also require active organization when one is set
+        qs = qs.filter(
+            models.Q(organization__isnull=True) | models.Q(organization__is_active=True)
+        )
+        return qs
 
     @classmethod
     def get_by_slug(cls, slug):
-        """Get event by slug"""
+        """Get a publicly visible event by slug."""
         try:
-            return cls.objects.get(slug=slug, active=True)
+            return cls.objects.get(
+                slug=slug,
+                active=True,
+                status=cls.Status.PUBLISHED,
+            )
         except cls.DoesNotExist:
             return None
 
@@ -469,3 +511,12 @@ auditlog.register(GrupoTipo)
 auditlog.register(Grupo)
 auditlog.register(GrupoMiembro)
 auditlog.register(EventRequest)
+
+
+@receiver(post_save, sender=Event)
+def sync_ticket_type_dates(sender, instance, **kwargs):
+    """For non-recurring events, keep all ticket type occurrence_dates in sync with event.start."""
+    if not instance.is_recurring and instance.start:
+        instance.tickettype_set.exclude(occurrence_date=instance.start).update(
+            occurrence_date=instance.start
+        )

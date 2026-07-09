@@ -39,6 +39,7 @@ ALLOWED_HOSTS = [
     'localhost',
     'bonos.fa2022.org',
     'eventos.fuegoaustral.org',
+    'https://hexaplaric-branchlike-zain.ngrok-free.dev',
     os.environ.get('EXTRA_HOST')
 ]
 print(f'ALLOWED_HOSTS: {ALLOWED_HOSTS}')
@@ -82,7 +83,7 @@ INSTALLED_APPS = [
     'events.apps.EventsConfig',
     'espaciozen.apps.EspaciozenConfig',
     'caja.apps.CajaConfig',
-    'logros.apps.LogrosConfig',
+    'organizations.apps.OrganizationsConfig',
 ]
 
 MIDDLEWARE = [
@@ -446,3 +447,9 @@ CKEDITOR_5_CONFIGS = {
         }
     }
 }
+
+# Allow local_settings to override any setting defined above
+try:
+    from deprepagos.local_settings import *  # noqa
+except ImportError:
+    pass

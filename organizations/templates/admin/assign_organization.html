@@ -1,0 +1,26 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h2>Asignar usuarios a organización</h2>
+
+<p>Se asignarán los siguientes usuarios:</p>
+<ul>
+  {% for user in queryset %}
+    <li>{{ user.email }} — {{ user.get_full_name }}</li>
+  {% endfor %}
+</ul>
+
+<form method="post">
+  {% csrf_token %}
+  <table>
+    {{ form.as_table }}
+    {% for user in queryset %}
+      <input type="hidden" name="{{ action_checkbox_name }}" value="{{ user.pk }}">
+    {% endfor %}
+    <input type="hidden" name="action" value="assign_to_organization">
+  </table>
+  <p>
+    <input type="submit" name="apply" value="Confirmar asignación" class="default">
+    <a href="{{ request.META.HTTP_REFERER }}" class="button cancel-link">Cancelar</a>
+  </p>
+</form>
+{% endblock %}

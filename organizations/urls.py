@@ -1,0 +1,14 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.dashboard_home, name='dashboard_home'),
+    path('o/<slug:org_slug>/', views.dashboard_event_list, name='dashboard_event_list'),
+    path('o/<slug:org_slug>/events/new/', views.dashboard_event_create, name='dashboard_event_create'),
+    path('o/<slug:org_slug>/events/<int:event_id>/edit/', views.dashboard_event_edit, name='dashboard_event_edit'),
+    path('o/<slug:org_slug>/events/<int:event_id>/publish/', views.dashboard_event_publish, name='dashboard_event_publish'),
+    path('o/<slug:org_slug>/events/<int:event_id>/unpublish/', views.dashboard_event_unpublish, name='dashboard_event_unpublish'),
+    path('o/<slug:org_slug>/members/', views.dashboard_members, name='dashboard_members'),
+    path('o/<slug:org_slug>/members/add/', views.dashboard_member_add, name='dashboard_member_add'),
+    path('o/<slug:org_slug>/members/<int:membership_id>/remove/', views.dashboard_member_remove, name='dashboard_member_remove'),
+]

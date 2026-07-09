@@ -25,7 +25,7 @@ def _valid_main(event):
     if not event:
         return False
     now = timezone.now()
-    return event.active and event.end >= now
+    return event.active and (event.end is None or event.end >= now)
 
 
 def _transfer_main(*, new_main, previous_main=None):
@@ -75,7 +75,7 @@ def promote_if_no_valid_main(event):
     """
     Al crear un evento: si no hay main vigente, el nuevo pasa a ser main.
     """
-    if not event.pk or not event.active or event.end < timezone.now():
+    if not event.pk or not event.active or (event.end is not None and event.end < timezone.now()):
         return
 
     current_main = Event.objects.filter(is_main=True).exclude(pk=event.pk).first()

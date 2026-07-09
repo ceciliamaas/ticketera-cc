@@ -1,0 +1,25 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Seleccionar Organización{% endblock %}
+{% block content %}
+<h2>Tus Organizaciones</h2>
+{% if memberships %}
+    <div class="row mt-3">
+        {% for m in memberships %}
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ m.organization.name }}</h5>
+                    <p class="card-text text-muted">Rol: {{ m.get_role_display }}</p>
+                    <a href="{% url 'dashboard_event_list' org_slug=m.organization.slug %}"
+                       class="btn btn-primary">Ver eventos</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-warning mt-3">
+        No pertenecés a ninguna organización. Contactá a un administrador.
+    </div>
+{% endif %}
+{% endblock %}

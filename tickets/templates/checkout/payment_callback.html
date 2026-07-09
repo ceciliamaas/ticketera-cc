@@ -6,7 +6,6 @@
                  id="loading-section">
                 <h1>Procesando tu pago...</h1>
                 <div>Estamos verificando el estado de tu pago. Por favor, espera un momento.</div>
-                <div>Si pagaste por rapipago o pagofacil, podes cerrar esta pantalla. tu bono aparecera en tu perfil cuando se acredite tu pago.</div>
                 <div class="spinner-border text-primary" role="status">
                     <span class="sr-only">Loading...</span>
                 </div>
@@ -16,45 +15,18 @@
                  style="display: none !important;">
                 <h1>¡Pago Completado con éxito!</h1>
                 <div>
-                    Tu pago ha sido procesado correctamente y tus bonos han sido emitidos.
+                    Tu pago ha sido procesado correctamente y tus entradas han sido emitidas.
                     <br>
-                    Podes encontrarlos en la sección “Bonos” en tu perfil.
+                    Podes encontrarlas en la sección “Entradas” en tu perfil.
                 </div>
                 <a href="{% url 'my_ticket' %}"
-                   class="btn btn-primary mt-3 text-white text-decoration-none">Ir a Bonos</a>
-            </div>
-            <div class="card-body d-flex justify-content-between flex-column align-items-center main-card-spacing gap-3"
-                 id="refunded-section"
-                 style="display: none !important;">
-                <h1>Pago Devuelto</h1>
-                <div>
-                    Se agotaron los bonos y tu pago fue devuelto.
-                    <br>
-                    Estate atento a las novedades de la comunidad para el JORTEO.
-                </div>
+                   class="btn btn-primary mt-3 text-white text-decoration-none">Ir a Entradas</a>
             </div>
         </div>
     </div>
 </div>
 
-{% include 'mi_fuego/partials/logro_unlocked_modal.html' %}
-
 <script type="text/javascript">
-        let achievementQueue = [];
-
-        function showNextAchievementModal() {
-            if (!achievementQueue.length) return;
-            const achievement = achievementQueue.shift();
-            const modalEl = document.getElementById('logroUnlockedModal');
-            showLogroUnlockedModal(achievement);
-            if (modalEl) {
-                modalEl.addEventListener('hidden.bs.modal', function onHidden() {
-                    modalEl.removeEventListener('hidden.bs.modal', onHidden);
-                    showNextAchievementModal();
-                }, { once: true });
-            }
-        }
-
         function checkOrderStatus() {
             fetch("{% url 'check_order_status' order_key=order_key %}")
                 .then(response => response.json())
@@ -62,11 +34,6 @@
                     if (data.status === "CONFIRMED") {
                         document.getElementById('loading-section').style = 'display: none !important';
                         document.getElementById('success-section').style.display = 'block';
-
-                        if (data.new_achievements && data.new_achievements.length) {
-                            achievementQueue = data.new_achievements.slice();
-                            showNextAchievementModal();
-                        }
                     } else if (data.status === "REFUNDED") {
                         document.getElementById('loading-section').style = 'display: none !important';
                         document.getElementById('refunded-section').style.display = 'block';

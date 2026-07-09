@@ -1,10 +1,9 @@
 {% extends '../../tickets/barbu_base.html' %}
-{% block page_title %}
-    Eventos
-{% endblock page_title %}
-{% block menu %}
-    <!-- Navigation moved to sidebar menu -->
-{% endblock menu %}
+{% block page_title %}Mis Tickets{% endblock page_title %}
+{% block menu %}{% endblock menu %}
+{% block innercontent %}
+    {% block truecontent %}{% endblock truecontent %}
+{% endblock innercontent %}
 {% block alerts %}
     {% if not event.transfer_period %}
         <div class="container-fluid">

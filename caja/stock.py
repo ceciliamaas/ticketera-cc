@@ -62,13 +62,14 @@ def get_or_create_product_for_ticket_type(ticket_type, initial_quantity=None):
             reason=EventProductStockRecord.Reason.MIGRATION,
         ).exists():
             qty = initial_quantity if initial_quantity is not None else ticket_type.ticket_count
-            _apply_delta(
-                product,
-                qty,
-                EventProductStockRecord.Reason.MIGRATION,
-                user=None,
-                notes='Migración desde ticket_count',
-            )
+            if qty is not None:
+                _apply_delta(
+                    product,
+                    qty,
+                    EventProductStockRecord.Reason.MIGRATION,
+                    user=None,
+                    notes='Migración desde ticket_count',
+                )
     return product
 
 

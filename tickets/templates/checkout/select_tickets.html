@@ -16,10 +16,10 @@
                 {% if ticket_data %}
                 <div class="d-flex justify-content-center ">Paso 1 de 4</div>
                 {% endif %}
-                <h1 class="card-title">Bonos {{ event.name }}</h1>
+                <h1 class="card-title">Entradas {{ event.name }}</h1>
                 {% if ticket_data %}
                 <div class="alert alert-info w-100" role="alert">
-                    {% if event.max_tickets_per_order %}Podés comprar hasta <strong>{{ available_tickets }} bonos</strong>.{% endif %}
+                    {% if event.max_tickets_per_order %}Podés comprar hasta <strong>{{ available_tickets }} entradas</strong>.{% endif %}
                     <!-- Al finalizar la compra, podrás transferir los bonos a otras personas. -->
                 </div>
                     <form method="post"
@@ -51,7 +51,9 @@
                                             </div>
                                             <div class="ticket-price text-center">
                                                 {% if ticket.is_free_ticket %}
-                                                    <div class="mb-2 fw-bold">Monto libre</div>
+                                                    <div class="mb-2 fw-bold">Gratis</div>
+                                                {% elif ticket.price == 0 %}
+                                                    <div class="mb-2 fw-bold">Gratis</div>
                                                 {% else %}
                                                     <div class="mb-2 fw-bold">${{ ticket.price|floatformat|intcomma }}</div>
                                                 {% endif %}
@@ -61,23 +63,11 @@
                                                            name="{{ ticket.field_name }}"
                                                            value="{{ ticket.quantity|default:0 }}"
                                                            min="0"
-                                                           max="{{ ticket.ticket_count }}"
+                                                           max="{{ ticket.ticket_count|default:"" }}"
                                                            class="form-control form-control-sm text-center quantity-input"
                                                            style="width: 60px; display: inline-block;">
                                                     <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn" data-ticket-id="{{ ticket.id }}" data-increment="1">&plus;</button>
                                                 </span>
-                                                {% if ticket.is_free_ticket %}
-                                                    <div class="mt-2">
-                                                        <input type="number"
-                                                               name="ticket_{{ ticket.id }}_custom_amount"
-                                                               value="0"
-                                                               min="0"
-                                                               step="0.01"
-                                                               class="form-control form-control-sm text-center custom-amount-input"
-                                                               placeholder="Monto"
-                                                               style="width: 100px; display: inline-block;">
-                                                    </div>
-                                                {% endif %}
                                             </div>
                                         </div>
                                     </div>
@@ -86,7 +76,7 @@
                             <table class="table align-middle d-none d-sm-table">
                                 <thead>
                                     <tr>
-                                        <th class="text-start">Tipo de Bono</th>
+                                        <th class="text-start">Tipo de Entrada</th>
                                         <th class="text-end">Precio</th>
                                         <th class="text-end">Cantidad</th>
                                     </tr>
@@ -99,8 +89,8 @@
                                                 <span style="font-size: 0.85em; color: #666;">{{ ticket.description }}</span>
                                             </td>
                                             <td class="text-end align-middle fw-bold">
-                                                {% if ticket.is_free_ticket %}
-                                                    Monto libre
+                                                {% if ticket.price == 0 %}
+                                                    Gratis
                                                 {% else %}
                                                     ${{ ticket.price|floatformat|intcomma }}
                                                 {% endif %}
@@ -112,7 +102,7 @@
                                                            name="{{ ticket.field_name }}"
                                                            value="{{ ticket.quantity|default:0 }}"
                                                            min="0"
-                                                           max="{{ ticket.ticket_count }}"
+                                                           max="{{ ticket.ticket_count|default:"" }}"
                                                            class="form-control form-control-sm text-center quantity-input"
                                                            style="width: 60px; display: inline-block;">
                                                     <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn" data-ticket-id="{{ ticket.id }}" data-increment="1">&plus;</button>
@@ -140,7 +130,7 @@
                                 Precios expresados en <b>pesos argentinos</b>
                             </div>
                             <div>
-                                <b>Subtotal Bonos</b> <span id="subtotal">$0</span>
+                                <b>Subtotal</b> <span id="subtotal">$0</span>
                             </div>
                         </div>
                         <button type="submit"
@@ -180,7 +170,7 @@
                 const maxTicketsPerOrder = {{ available_tickets }};
 
                 const ticketsRemainingByType = {
-                    {% for ticket in ticket_data %}'{{ ticket.id }}': {{ ticket.ticket_count }},{% endfor %}
+                    {% for ticket in ticket_data %}'{{ ticket.id }}': {{ ticket.ticket_count|default:'null' }},{% endfor %}
                 };
 
                 const ticketFieldNames = [
@@ -196,9 +186,9 @@
                     
                     if (value < 0) {
                         input.value = 0;
-                    } else if (value > maxAvailable) {
+                    } else if (maxAvailable !== null && value > maxAvailable) {
                         input.value = maxAvailable;
-                        alert('No hay suficientes bonos disponibles para este tipo.');
+                        alert('No hay suficientes entradas disponibles para este tipo.');
                     }
                     
                     // Update all inputs with the same name
@@ -222,9 +212,9 @@
                     const maxAvailable = ticketsRemainingByType[ticketId];
                     const totalQuantity = getTotalQuantity();
 
-                    if (newValue >= 0 && newValue <= maxAvailable) {
+                    if (newValue >= 0 && (maxAvailable === null || newValue <= maxAvailable)) {
                         if (increment > 0 && totalQuantity + increment > maxTicketsPerOrder) {
-                            alert('No puedes seleccionar más de ' + maxTicketsPerOrder + ' bonos en total.');
+                            alert('No puedes seleccionar más de ' + maxTicketsPerOrder + ' entradas en total.');
                             return;
                         }
                         
@@ -235,8 +225,8 @@
                             const event = new Event('change', { bubbles: true });
                             input.dispatchEvent(event);
                         });
-                    } else if (newValue > maxAvailable) {
-                        alert('No hay suficientes bonos disponibles para este tipo.');
+                    } else if (newValue > maxAvailable && maxAvailable !== null) {
+                        alert('No hay suficientes entradas disponibles para este tipo.');
                     }
                 }
 

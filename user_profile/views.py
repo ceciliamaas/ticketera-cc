@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import transaction, models
 from django.http import Http404, HttpResponseNotAllowed, HttpResponseForbidden, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -420,18 +420,27 @@ def my_ticket_view(request, event_slug=None):
             # If event doesn't exist, redirect to main event
             return redirect('my_ticket')
     
-    # If no event_slug, determine what to show by default
-    # Priority: 1) Main event if user has tickets, 2) Any active event if user has tickets, 3) Past events
-    
-    # Get events where user has tickets, prioritizing main event
-    user_events = Event.get_active_events().filter(
+    # If no event_slug: show all upcoming event tickets grouped by event
+    from django.utils import timezone as tz
+    upcoming_events = Event.get_active_events().filter(
         newticket__holder=request.user
-    ).distinct().order_by('-is_main', 'name')
-    
-    # If user has tickets in active events, redirect to the first one (main event priority)
-    if user_events.exists():
-        main_event_with_tickets = user_events.first()
-        return redirect('my_ticket_event', event_slug=main_event_with_tickets.slug)
+    ).filter(
+        models.Q(start__gte=tz.now()) | models.Q(start__isnull=True)
+    ).distinct().order_by('start')
+
+    tickets_by_event = {}
+    for ev in upcoming_events:
+        tickets = NewTicket.objects.filter(holder=request.user, event=ev).order_by('owner')
+        tickets_by_event[ev] = [t.get_dto(user=request.user) for t in tickets]
+
+    has_available_tickets = TicketType.objects.get_available_ticket_types_for_current_events().exists()
+
+    return render(request, 'mi_fuego/my_tickets/my_ticket.html', {
+        'tickets_by_event': tickets_by_event,
+        'has_available_tickets': has_available_tickets,
+        'nav_primary': 'tickets',
+        'now': tz.now(),
+    })
     
     # If no active events with tickets, show message for current events (not past)
     # Get the main event for context

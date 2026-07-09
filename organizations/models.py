@@ -1,0 +1,103 @@
+from django.db import models
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.utils.text import slugify
+
+
+class UserProxy(User):
+    """Proxy of auth.User so it appears in the Organizaciones y Usuarios admin section."""
+    class Meta:
+        proxy = True
+        app_label = 'organizations'
+        verbose_name = 'Usuario'
+        verbose_name_plural = 'Usuarios'
+
+
+class Organization(models.Model):
+    name = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=200, unique=True)
+    is_active = models.BooleanField(default=True)
+    email = models.EmailField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        indexes = [
+            models.Index(fields=['slug']),
+            models.Index(fields=['is_active']),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+
+class OrganizationMembership(models.Model):
+    class Role(models.TextChoices):
+        OWNER = 'owner', 'Owner'
+        ADMIN = 'admin', 'Admin'
+        EDITOR = 'editor', 'Editor'
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='organization_memberships',
+    )
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='memberships',
+    )
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.ADMIN)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('user', 'organization')]
+        indexes = [
+            models.Index(fields=['organization']),
+            models.Index(fields=['user']),
+        ]
+
+    def __str__(self):
+        return f'{self.user} — {self.organization} ({self.role})'
+
+    @property
+    def is_owner(self):
+        return self.role == self.Role.OWNER
+
+    @property
+    def is_admin_or_above(self):
+        return self.role in (self.Role.OWNER, self.Role.ADMIN)
+
+
+@receiver(post_save, sender=OrganizationMembership)
+def grant_staff_on_membership(sender, instance, created, **kwargs):
+    """Grant is_staff=True and model permissions when a user is added to any organization."""
+    if not created:
+        return
+    user = instance.user
+    changed = False
+    if not user.is_staff:
+        user.is_staff = True
+        changed = True
+    if changed:
+        user.save(update_fields=['is_staff'])
+
+    # Grant view/add/change/delete permissions for events and organizations
+    from django.contrib.contenttypes.models import ContentType
+    from django.contrib.auth.models import Permission
+    from events.models import Event
+    from organizations.models import Organization, OrganizationMembership as OM
+
+    target_models = [Event, Organization, OM]
+    for model_class in target_models:
+        ct = ContentType.objects.get_for_model(model_class)
+        perms = Permission.objects.filter(content_type=ct)
+        user.user_permissions.add(*perms)
+

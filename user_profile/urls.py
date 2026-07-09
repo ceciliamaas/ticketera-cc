@@ -10,8 +10,6 @@ from .views import (
     transferable_tickets_view,
     volunteering,
     my_orders_view,
-    mis_logros_view,
-    logros_mark_celebration_shown,
     la_sede_view,
     propose_event_view,
     my_event_requests_view,
@@ -41,20 +39,24 @@ from .views import (
 )
 
 urlpatterns = [
-    # Profile related paths
+    # Auth/profile paths
     path("complete-profile/", complete_profile, name="complete_profile"),
     path("verification-congrats/", verification_congrats, name="verification_congrats"),
     path("profile-congrats/", profile_congrats, name="profile_congrats"),
+    path("", my_fire_view, name="mi_fuego"),
+    path("impersonation/stop/", stop_impersonation_view, name="stop_impersonation"),
+
+    # Ticket / event paths (new clean URLs registered from deprepagos/urls.py)
+    # These legacy paths are kept for redirect compatibility
+    path("mis-bonos/", my_ticket_view, name="my_ticket"),
+    path("mis-bonos/eventos-anteriores/", my_ticket_view, {"event_slug": "eventos-anteriores"}, name="my_ticket_past"),
+    path("mis-bonos/ordenes/", my_orders_view, name="my_orders"),
+
+    # Profile
     path("perfil/", profile_view, name="profile"),
     path("perfil/send-phone-code/", send_phone_code_ajax, name="send_phone_code_ajax"),
     path("perfil/verify-phone-code/", verify_phone_code_ajax, name="verify_phone_code_ajax"),
-    path("", my_fire_view, name="mi_fuego"),
-    path("impersonation/stop/", stop_impersonation_view, name="stop_impersonation"),
-    # Specific paths (must come before generic slug pattern)
-    path("mis-bonos/eventos-anteriores/", my_ticket_view, {"event_slug": "eventos-anteriores"}, name="my_ticket_past"),
-    path("mis-bonos/ordenes/", my_orders_view, name="my_orders"),
-    path("mis-bonos/logros/", mis_logros_view, name="mis_logros"),
-    path("mis-bonos/logros/celebracion-vista/", logros_mark_celebration_shown, name="logros_mark_celebration_shown"),
+
     path("la-sede/", la_sede_view, name="la_sede"),
     path("la-sede/proponer-evento/", propose_event_view, name="propose_event"),
     path("la-sede/mis-propuestas/", my_event_requests_view, name="my_event_requests"),
@@ -71,22 +73,17 @@ urlpatterns = [
     path("mis-eventos/<slug:event_slug>/configuracion-caja/ajax/", caja_config_ajax, name="caja_config_ajax"),
     path("scanner/", scanner_events_view, name="scanner_events"),
     path("cajas/", caja_events_view, name="caja_events"),
-    # Event-specific paths
+
+    # Event-specific ticket paths
     path("mis-bonos/<slug:event_slug>/volunteering/", volunteering, name="volunteering"),
     path("mis-bonos/<slug:event_slug>/grupos/", mis_grupos_view, name="mis_grupos"),
     path("mis-bonos/<slug:event_slug>/grupos/<int:grupo_id>/", grupo_manage_view, name="grupo_manage"),
     path("mis-bonos/<slug:event_slug>/grupos/<int:grupo_id>/ajax/", grupo_toggle_ajax, name="grupo_toggle_ajax"),
     path("mis-bonos/<slug:event_slug>/bonos-transferibles/", transferable_tickets_view, name="transferable_tickets"),
-    # Event-specific ticket views (after specific paths)
     path("mis-bonos/<slug:event_slug>/", my_ticket_view, name="my_ticket_event"),
-    # AJAX endpoint for auto-refresh
     path("mis-bonos/<slug:event_slug>/ajax/", my_tickets_ajax, name="my_tickets_ajax"),
-    # AJAX endpoint for updating ticket restriction
+
     path("ticket/<str:ticket_key>/update-restriccion/", update_ticket_restriccion, name="update_ticket_restriccion"),
-    # Download ticket PDF
     path("ticket/<str:ticket_key>/download-pdf/", download_ticket_pdf, name="download_ticket_pdf"),
-    # AJAX endpoint for accepting terms
     path("accept-terms/", accept_terms_ajax, name="accept_terms_ajax"),
-    # Default redirect (no slug) - MUST BE LAST
-    path("mis-bonos/", my_ticket_view, name="my_ticket"),
 ]

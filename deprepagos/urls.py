@@ -2,65 +2,25 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
-
-from tickets.admin import admin_caja_view, email_has_account, admin_caja_order_view, admin_direct_tickets_view, \
-    admin_direct_tickets_buyer_view, admin_direct_tickets_congrats_view
-from user_profile.admin_sede import admin_sede_home_view
-from user_profile.admin_sede_members import admin_sede_members_view, admin_sede_multiple_active_view
-from user_profile.admin_sede_manual_members import (
-    admin_sede_manual_members_assign,
-    admin_sede_manual_members_user_search,
-    admin_sede_manual_members_view,
-)
-from user_profile.admin_sede_matches import (
-    admin_sede_matches_assign,
-    admin_sede_matches_user_search,
-    admin_sede_matches_view,
-)
-from user_profile.admin_sede_subscriptions import admin_sede_subscriptions_view
-
-from events.views.chatwoot_webhook import chatwoot_event_request_webhook
+from django.views.generic import RedirectView
+from user_profile.views import my_ticket_view, profile_view
 
 urlpatterns = [
-    path('admin/caja/', admin_caja_view, name='admin_caja_view'),
-
-    path('admin/caja/order/<str:order_key>/', admin_caja_order_view, name='admin_caja_order_view'),
-    path('admin/caja/email-has-account/', email_has_account, name='email_has_account'),
-
-    path('admin/direct_tickets/', admin_direct_tickets_view, name='admin_direct_tickets_view'),
-    path('admin/direct_tickets/buyer/', admin_direct_tickets_buyer_view, name='admin_direct_tickets_buyer_view'),
-    path('admin/direct_tickets/congrats/<int:new_order_id>/', admin_direct_tickets_congrats_view,
-         name='admin_direct_tickets_congrats_view'),
-    path('admin/sede/', admin_sede_home_view, name='admin_sede_home_view'),
-    path('admin/sede/members/', admin_sede_members_view, name='admin_sede_members_view'),
-    path('admin/sede/manual-members/', admin_sede_manual_members_view, name='admin_sede_manual_members_view'),
-    path(
-        'admin/sede/manual-members/users/search/',
-        admin_sede_manual_members_user_search,
-        name='admin_sede_manual_members_user_search',
-    ),
-    path(
-        'admin/sede/manual-members/assign/',
-        admin_sede_manual_members_assign,
-        name='admin_sede_manual_members_assign',
-    ),
-    path('admin/sede/multiple-active/', admin_sede_multiple_active_view, name='admin_sede_multiple_active_view'),
-    path('admin/sede/subscriptions/', admin_sede_subscriptions_view, name='admin_sede_subscriptions_view'),
-    path('admin/sede/matches/', admin_sede_matches_view, name='admin_sede_matches_view'),
-    path('admin/sede/matches/users/search/', admin_sede_matches_user_search, name='admin_sede_matches_user_search'),
-    path('admin/sede/matches/assign/', admin_sede_matches_assign, name='admin_sede_matches_assign'),
-
+    path('favicon.ico', RedirectView.as_view(url='/static/img/favicon.png', permanent=True)),
     path('admin/', admin.site.urls),
-
     path('mi-fuego/', include('allauth.urls')),
     path('mi-fuego/', include('caja.urls')),
     path('mi-fuego/', include('user_profile.urls')),
     path('ckeditor5/', include('django_ckeditor_5.urls')),
     path('espaciozen/', include('espaciozen.urls')),
-    path('webhooks/chatwoot/event-requests/', chatwoot_event_request_webhook, name='chatwoot_event_request_webhook'),
     path('', include('tickets.urls')),
+    path('dashboard/', include('organizations.urls')),
 
+    # Clean public-facing URLs — defined LAST so they win name resolution
+    path('mis-entradas/proximos-eventos/', my_ticket_view, name='my_ticket'),
+    path('mis-entradas/eventos-anteriores/', my_ticket_view, {'event_slug': 'eventos-anteriores'}, name='my_ticket_past'),
+    path('mi-perfil/', profile_view, name='profile'),
 ]
 
-if settings.DEBUG == True:
+if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

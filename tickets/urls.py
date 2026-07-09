@@ -11,7 +11,7 @@ urlpatterns = [
     path('', home.home, name='home'),
     
     # Events listing (must come before slug pattern)
-    path('eventos/', home.events_listing, name='events_listing'),
+    path('eventos/', home.home, name='events_listing'),
 
     # Single-segment paths must come before <slug:event_slug>/ or they are treated as event slugs.
     path('ping/', home.ping, name='ping'),
@@ -60,7 +60,6 @@ urlpatterns = [
 
     # Checkout related paths (using query parameters for event selection)
     path('checkout/select-tickets', checkout.select_tickets, name='select_tickets'),
-    path('checkout/select-donations', checkout.select_donations, name='select_donations'),
     path('checkout/order-summary', checkout.order_summary, name='order_summary'),
     path('term/<slug:slug>/', checkout.view_term_description, name='view_term_description'),
 

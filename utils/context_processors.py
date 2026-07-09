@@ -33,7 +33,7 @@ def current_event(request):
         "event": event,
         "has_multiple_events": has_multiple_events,
     }
-    if request.user.is_authenticated:
+    if request.user.is_authenticated and event is not None:
 
         tickets = NewTicket.objects.filter(
             holder=request.user, event=event

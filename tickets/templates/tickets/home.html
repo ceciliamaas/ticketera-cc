@@ -1,225 +1,132 @@
 {% extends 'tickets/barbu_base.html' %}
 {% load humanize %}
+{% load static %}
 {% block full_content %}
-    {% if event %}
-        
-        <a {%  if ticket_types %}href="{% url 'select_tickets' %}?event={{ event.slug }}"{% endif %} class="container-xxl hero hero-container">
-            <img src="{{ event.header_image.url }}" alt="{{ event.name }}" class="hero-image">
-            <div class="hero-button-container">
-                
-            </div>
-        </a>
-        <div class="container-xxl d-flex justify-content-center mt-3">
-            {% if ticket_types %}
-                <a href="{% url 'select_tickets' %}?event={{ event.slug }}" class="btn btn-primary">Adquirir Bonos</a>
-            {% elif next_ticket_type %}
-                <button class="btn btn-secondary disabled"><span id="countdown"></span></button>
+
+{% if event %}
+{# ── Single event page ──────────────────────────────────────────────── #}
+<div class="container-xxl py-4">
+
+  {% if event.header_image %}
+    <img src="{{ event.header_image.url }}" alt="{{ event.name }}"
+         class="w-100 rounded mb-4" style="max-height:420px; object-fit:cover;">
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      {% if event.organization %}
+        <small class="text-muted">{{ event.organization.name }}</small>
+      {% endif %}
+      <h1 class="mt-1">{{ event.name }}</h1>
+
+      <ul class="list-unstyled text-muted mb-3">
+        {% if event.start and not event.is_recurring %}
+          <li><i class="fa-regular fa-calendar me-2"></i>{{ event.start|date:"d/m/Y H:i" }}</li>
+        {% endif %}
+        {% if event.is_recurring %}
+          <li><i class="fa-solid fa-rotate me-2"></i>Evento recurrente</li>
+        {% endif %}
+        {% if event.location %}
+          <li>
+            <i class="fa-solid fa-location-dot me-2"></i>
+            {% if event.location_url %}
+              <a href="{{ event.location_url }}" target="_blank">{{ event.location }}</a>
+            {% else %}
+              {{ event.location }}
             {% endif %}
-        </div>
-        <div class="container-xxl home-section">
-            <div class="row d-flex justify-content-center">
-                <div class="col-lg-4">
-                    <h2 class="heading">
-                        Sobre
-                        <br />
-                        el evento
-                    </h2>
-                </div>
-                <div class="col-lg-6 rich-text">{{ event.description|safe }}</div>
-            </div>
-        </div>
-        <div class="container-xxl d-flex justify-content-center mt-3">
-            {% if ticket_types %}
-                <a href="{% url 'select_tickets' %}?event={{ event.slug }}" class="btn btn-primary">Adquirir Bonos</a>
-            {% elif next_ticket_type %}
-                <button class="btn btn-secondary disabled"><span id="countdown-bottom"></span></button>
-            {% endif %}
-        </div>
-        <div class="container hr">
-            <hr />
-        </div>
-    {% endif %}
-    <div class="container-xxl home-section">
-        <div class="row d-flex justify-content-center">
-            <div class="col-lg-5">
-                <h2 class="heading">Donaciones</h2>
-            </div>
-            <div class="col-lg-5">
-                <div class="section-title mb-3">
-                    Toda creación de la comunidad en Fuego Austral o en La Sede
-                    requiere de mucho trabajo, procesos y materiales.
-                </div>
-                <div class="section-text">
-                    Por eso, además de adquirir tu bono contribución de ingreso,
-                    podés colaborar con tu donación para impulsar la
-                    creatividad, ayudar a quienes necesiten una mano con su bono
-                    contribución, para mejorar el espacio donde nos encontramos
-                    todo el año, y más.
-                </div>
-            </div>
-        </div>
-    </div>
-    <style>
-        .donation-section {
-            background-color: #f3f4f5;
+          </li>
+        {% endif %}
+      </ul>
 
-            margin-top: 1rem;
-            margin-bottom: 1rem;
-            @media (min-width: 768px) {
-                margin-top: 2rem;
-                margin-bottom: 2rem;
-            }
-
-            border-radius: 1rem;
-            @media (min-width: 768px) {
-                border-radius: 2rem;
-            }
-
-            padding: 1rem;
-            @media (min-width: 576px) {
-                padding: 1rem 2rem;
-            }
-            @media (min-width: 768px) {
-                padding: 2rem 3rem;
-            }
-            @media (min-width: 992px) {
-                padding: 3rem 5rem;
-            }
-        }
-        .hero-container {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .hero-button-container {
-            position: absolute;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 2;
-            text-align: center;
-        }
-        .btn-hero {
-            font-weight: 600;
-            padding: 0.75rem 1.5rem;
-            font-size: 1.1rem;
-            background-color: rgba(255, 255, 255, 0.95);
-            color: #000;
-            border: none;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-        @media (min-width: 768px) {
-            .hero-button-container {
-                width: 100%;
-                max-width: 300px;
-            }
-            .btn-hero {
-                width: 80%;
-                min-width: 240px;
-            }
-        }
-        .btn-hero:hover {
-            background-color: #fff;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-        }
-        .btn-hero.disabled {
-            opacity: 0.9;
-            cursor: not-allowed;
-        }
-        @media (max-width: 768px) {
-            .hero-button-container {
-                bottom: 1rem;
-            }
-            .btn-hero {
-                padding: 0.5rem 1rem;
-                font-size: 1rem;
-            }
-        }
-    </style>
-    <div class="home-section">
-        <div class="container-xxl donation-section d-flex gap-3 flex-row justify-content-between align-items-center flex-wrap">
-            <div>
-                <div class="section-title">Becas de Arte</div>
-                <div class="section-text">Para impulsar la creatividad en nuestra ciudad temporal.</div>
-            </div>
-            <div>
-                <a href="https://donaronline.org/asociacion-civil-fuego-austral/becas-de-arte-fuego-austral-2025"
-                   target="_blank"
-                   class="btn btn-secondary">Quiero impulsar la creatividad</a>
-            </div>
-        </div>
-        <div class="container-xxl donation-section d-flex gap-3 flex-row justify-content-between align-items-center flex-wrap">
-            <div>
-                <div class="section-title">Inclusión Radical</div>
-                <div class="section-text">Para ayudar a quienes necesitan una mano con su bono contribución.</div>
-            </div>
-            <div>
-                <a href="https://donaronline.org/asociacion-civil-fuego-austral/becas-de-inclusion-radical-para-fuego-austral-2025-kairos"
-                   target="_blank"
-                   class="btn btn-secondary">Quiero dar una mano</a>
-            </div>
-        </div>
-        <div class="container-xxl donation-section d-flex gap-3 flex-row justify-content-between align-items-center flex-wrap">
-            <div>
-                <div class="section-title">La Sede</div>
-                <div class="section-text">Para mejorar el espacio donde nos encontramos todo el año.</div>
-            </div>
-            <div>
-                <a href="https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c9380847dbdc0a1017dbe5e16a1005c"
-                   target="_blank"
-                   class="btn btn-secondary">Quiero mejorar el espacio comunal</a>
-            </div>
-        </div>
+      <div class="rich-text">{{ event.description|safe }}</div>
     </div>
 
-    {% if not ticket_types and next_ticket_type %}
-        <script>
-            // Set the date we're counting down to
-            const countDownDate = new Date("{{ next_ticket_type.date_from|date:'c' }}").getTime();
+    <div class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Entradas</h5>
+          {% if ticket_types %}
+            {% for tt in ticket_types %}
+              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div>
+                  <span class="fw-semibold">{{ tt.name }}</span>
+                  {% if event.is_recurring and tt.occurrence_date %}
+                    <br><small class="text-muted"><i class="fa-regular fa-calendar me-1"></i>{{ tt.occurrence_date|date:"d/m/Y H:i" }}</small>
+                  {% endif %}
+                  {% if tt.description %}<br><small class="text-muted">{{ tt.description }}</small>{% endif %}
+                </div>
+                <span class="text-nowrap ms-3">$ {{ tt.price|intcomma }}</span>
+              </div>
+            {% endfor %}
+            <div class="mt-3">
+              <a href="{% url 'select_tickets' %}?event={{ event.slug }}" class="btn btn-primary w-100">
+                Comprar entradas
+              </a>
+            </div>
+          {% elif next_ticket_type %}
+            <p class="text-muted">Próxima venta: <strong>{{ next_ticket_type.date_from|date:"d/m/Y H:i" }}</strong></p>
+            <button class="btn btn-secondary w-100 disabled">Próximamente</button>
+          {% else %}
+            <p class="text-muted mb-0">No hay entradas disponibles en este momento.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-            // Update the countdown every 1 second
-            const x = setInterval(function() {
-                const now = new Date().getTime();
-                const distance = countDownDate - now;
+{% else %}
+{# ── Event gallery (homepage) ────────────────────────────────────────── #}
+<div class="container-xxl py-5">
+  {% if active_events %}
+    <div class="row g-4">
+      {% for event in active_events %}
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm border-0">
+          {% if event.header_image %}
+            <img src="{{ event.header_image.url }}"
+                 class="card-img-top"
+                 alt="{{ event.name }}"
+                 style="height: 200px; object-fit: cover;">
+          {% else %}
+            <div class="card-img-top bg-dark d-flex align-items-center justify-content-center"
+                 style="height: 200px;">
+              <i class="fa-solid fa-calendar-days text-white fs-1"></i>
+            </div>
+          {% endif %}
+          <div class="card-body d-flex flex-column">
+            {% if event.organization %}
+              <small class="text-muted mb-1">{{ event.organization.name }}</small>
+            {% endif %}
+            <h5 class="card-title">{{ event.name }}</h5>
+            {% if event.start %}
+              <p class="card-text text-muted small mb-1">
+                <i class="fa-regular fa-calendar me-1"></i>{{ event.start|date:"d/m/Y H:i" }}
+              </p>
+            {% endif %}
+            {% if event.location %}
+              <p class="card-text text-muted small mb-2">
+                <i class="fa-solid fa-location-dot me-1"></i>{{ event.location }}
+              </p>
+            {% endif %}
+            <div class="mt-auto pt-3">
+              <a href="{% url 'event_home' event.slug %}"
+                 class="btn btn-primary w-100">Ver entradas</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-center py-5">
+      <i class="fa-solid fa-calendar-xmark text-muted mb-3" style="font-size:4rem;"></i>
+      <h3 class="text-muted">No hay eventos disponibles</h3>
+      <p class="text-muted">Próximamente habrá nuevos eventos.</p>
+    </div>
+  {% endif %}
+</div>
+{% endif %}
 
-                // Time calculations for days, hours, minutes and seconds
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                // Format with leading zeros
-                const formatNumber = (num) => num.toString().padStart(2, '0');
-
-                // Display the result
-                const countdownText = `Bonos disponibles en ${formatNumber(days)}d ${formatNumber(hours)}:${formatNumber(minutes)}:${formatNumber(seconds)}`;
-                const countdownElement = document.getElementById("countdown");
-                const countdownBottomElement = document.getElementById("countdown-bottom");
-                
-                if (countdownElement) {
-                    countdownElement.innerHTML = countdownText;
-                }
-                if (countdownBottomElement) {
-                    countdownBottomElement.innerHTML = countdownText;
-                }
-
-                // If the countdown is finished, clear the interval
-                if (distance < 0) {
-                    clearInterval(x);
-                    const finishedText = "¡Ya disponibles!";
-                    if (countdownElement) {
-                        countdownElement.innerHTML = finishedText;
-                    }
-                    if (countdownBottomElement) {
-                        countdownBottomElement.innerHTML = finishedText;
-                    }
-                    window.location.reload();
-                }
-            }, 1000);
-        </script>
-    {% endif %}
 {% endblock %}
+

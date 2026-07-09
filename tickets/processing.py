@@ -7,6 +7,12 @@ def mint_tickets(order):
 
     try:
         from tickets.models import NewTicket, OrderTicket, Order
+
+        # Idempotence guard: if already confirmed, do not mint again
+        if order.status == Order.OrderStatus.CONFIRMED:
+            logging.info(f"mint_tickets: order {order.key} already confirmed, skipping")
+            return
+
         user_already_has_ticket = NewTicket.objects.filter(owner=order.user, event=order.event).exists()
         logging.info(f"user_already_has_ticket {user_already_has_ticket}")
         order_has_more_than_one_ticket_type = order.total_ticket_types() > 1

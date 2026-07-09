@@ -10,7 +10,7 @@ from django.urls import reverse
 
 from events.models import Event, EventTermsAndConditions, EventTermsAndConditionsAcceptance
 from events.utils import get_event_from_request, store_event_in_session
-from tickets.forms import CheckoutTicketSelectionForm, CheckoutDonationsForm
+from tickets.forms import CheckoutTicketSelectionForm
 from tickets.models import TicketType, Order, OrderTicket
 
 
@@ -40,10 +40,12 @@ def select_tickets(request, event_slug=None):
         form = CheckoutTicketSelectionForm(request.POST, user=request.user, event=event)
         if form.is_valid():
             request.session['ticket_selection'] = form.cleaned_data
-            # Redirect with event parameter
+            # Skip donations step — set empty donations and order_sid directly
+            request.session['donations'] = {}
+            request.session['order_sid'] = str(uuid.uuid4())
             if event.slug:
-                return redirect(f"{reverse('select_donations')}?event={event.slug}")
-            return redirect('select_donations')
+                return redirect(f"{reverse('order_summary')}?event={event.slug}")
+            return redirect('order_summary')
         else:
             tickets_remaining = event.tickets_remaining() or 0
             available_tickets = event.max_tickets_per_order
@@ -169,7 +171,7 @@ def order_summary(request, event_slug=None):
                 'price': effective_price,
                 'quantity': quantity,
                 'subtotal': subtotal,
-                'is_free_ticket': price == 0,
+                'is_free_ticket': False,  # Price 0 = free, never a custom amount
                 'original_price': price,
             })
             items.append({

@@ -19,7 +19,7 @@ check_dependencies() {
     local missing_deps=()
     
     # Verificar PostgreSQL 16
-    if ! command -v /opt/homebrew/Cellar/postgresql@16/16.10/bin/psql >/dev/null 2>&1; then
+    if ! command -v /usr/local/opt/postgresql@17/bin/psql >/dev/null 2>&1; then
         missing_deps+=("PostgreSQL 16")
     fi
     
@@ -56,8 +56,8 @@ check_dependencies() {
         
         if [[ " ${missing_deps[@]} " =~ " PostgreSQL 16 " ]]; then
             echo -e "${BLUE}🐘 Instalar PostgreSQL 16:${NC}"
-            echo "   brew install postgresql@16"
-            echo "   brew services start postgresql@16"
+            echo "   brew install postgresql@17"
+            echo "   brew services start postgresql@17"
             echo ""
         fi
         
@@ -148,7 +148,7 @@ do_dump() {
     
     # Hacer dump completo con opciones optimizadas
     echo -e "${YELLOW}📦 Creando dump completo desde $DB_HOST:$DB_DATABASE...${NC}"
-    /opt/homebrew/Cellar/postgresql@16/16.10/bin/pg_dump \
+    /usr/local/opt/postgresql@17/bin/pg_dump \
         -h "$DB_HOST" \
         -U "$DB_USER" \
         -d "$DB_DATABASE" \
@@ -168,7 +168,7 @@ do_dump() {
     
     # Hacer dump solo esquema con opciones optimizadas
     echo -e "${YELLOW}🏗️  Creando dump de esquema...${NC}"
-    /opt/homebrew/Cellar/postgresql@16/16.10/bin/pg_dump \
+    /usr/local/opt/postgresql@17/bin/pg_dump \
         -h "$DB_HOST" \
         -U "$DB_USER" \
         -d "$DB_DATABASE" \
@@ -188,7 +188,7 @@ do_dump() {
     
     # Hacer dump solo datos con opciones optimizadas
     echo -e "${YELLOW}📊 Creando dump de datos...${NC}"
-    /opt/homebrew/Cellar/postgresql@16/16.10/bin/pg_dump \
+    /usr/local/opt/postgresql@17/bin/pg_dump \
         -h "$DB_HOST" \
         -U "$DB_USER" \
         -d "$DB_DATABASE" \
@@ -327,11 +327,11 @@ verify_local_connection() {
     echo -e "${BLUE}🔍 Verificando conexión a PostgreSQL local...${NC}"
     
     # Intentar con PostgreSQL 16 primero (que es el que tienes)
-    if /opt/homebrew/Cellar/postgresql@16/16.10/bin/psql -d postgres -c "SELECT version();" > /dev/null 2>&1; then
+    if /usr/local/opt/postgresql@17/bin/psql -d postgres -c "SELECT version();" > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Conexión a PostgreSQL local exitosa${NC}"
         echo -e "${YELLOW}📊 Versión de PostgreSQL local:${NC}"
-        /opt/homebrew/Cellar/postgresql@16/16.10/bin/psql -d postgres -t -c "SELECT version();" | xargs
-        export LOCAL_PSQL="/opt/homebrew/Cellar/postgresql@16/16.10/bin/psql"
+        /usr/local/opt/postgresql@17/bin/psql -d postgres -t -c "SELECT version();" | xargs
+        export LOCAL_PSQL="/usr/local/opt/postgresql@17/bin/psql"
     elif /opt/homebrew/Cellar/postgresql@17/17.6/bin/psql -d postgres -c "SELECT version();" > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Conexión a PostgreSQL local exitosa${NC}"
         echo -e "${YELLOW}📊 Versión de PostgreSQL local:${NC}"
@@ -340,7 +340,7 @@ verify_local_connection() {
     else
         echo -e "${RED}❌ Error: No se puede conectar a PostgreSQL local${NC}"
         echo "Asegúrate de que PostgreSQL esté ejecutándose:"
-        echo "brew services start postgresql@16"
+        echo "brew services start postgresql@17"
         echo "o"
         echo "brew services start postgresql@17"
         exit 1
@@ -362,10 +362,10 @@ verify_remote_connection() {
     # Configurar PGPASSWORD
     export PGPASSWORD="$DB_PASSWORD"
     
-    if /opt/homebrew/Cellar/postgresql@16/16.10/bin/psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_DATABASE" -c "SELECT version();" > /dev/null 2>&1; then
+    if /usr/local/opt/postgresql@17/bin/psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_DATABASE" -c "SELECT version();" > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Conexión a PostgreSQL remoto exitosa${NC}"
         echo -e "${YELLOW}📊 Versión de PostgreSQL remoto:${NC}"
-        /opt/homebrew/Cellar/postgresql@16/16.10/bin/psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_DATABASE" -t -c "SELECT version();" | xargs
+        /usr/local/opt/postgresql@17/bin/psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_DATABASE" -t -c "SELECT version();" | xargs
         return 0
     else
         echo -e "${RED}❌ Error: No se puede conectar a PostgreSQL remoto${NC}"

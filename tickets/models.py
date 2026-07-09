@@ -111,6 +111,11 @@ class TicketType(BaseModel):
     price_with_coupon = models.DecimalField(decimal_places=2, max_digits=10, null=True, blank=True)
     date_from = models.DateTimeField(null=True, blank=True)
     date_to = models.DateTimeField(null=True, blank=True)
+    occurrence_date = models.DateTimeField(
+        null=True, blank=True,
+        verbose_name="Fecha de la función",
+        help_text="Para eventos recurrentes: fecha y hora de esta función específica.",
+    )
     name = models.CharField(max_length=100)
     description = models.TextField(max_length=2000, blank=True)
     color = models.CharField(max_length=6, default='6633ff', blank=True)
@@ -176,15 +181,6 @@ class Order(BaseModel):
     phone = models.CharField(max_length=50)
     # Use a larger max_length to accommodate document numbers from user profiles
     dni = models.CharField(max_length=50)
-    donation_art = models.DecimalField('Becas de Arte $', validators=[MinValueValidator(Decimal('0'))],
-                                       decimal_places=0, max_digits=10, blank=True, null=True,
-                                       help_text='Para empujar la creatividad en nuestra ciudad temporal.')
-    donation_venue = models.DecimalField('Donaciones a La Sede $', validators=[MinValueValidator(Decimal('0'))],
-                                         decimal_places=0, max_digits=10, blank=True, null=True,
-                                         help_text='Para mejorar el espacio donde nos encontramos todo el año.')
-    donation_grant = models.DecimalField('Beca Inclusión Radical $', validators=[MinValueValidator(Decimal('0'))],
-                                         decimal_places=0, max_digits=10, blank=True, null=True,
-                                         help_text='Para ayudar a quienes necesitan una mano con su bono contribución.')
     amount = models.DecimalField(decimal_places=2, max_digits=10)
 
     coupon = models.ForeignKey('Coupon', null=True, blank=True, on_delete=models.RESTRICT)
@@ -293,32 +289,6 @@ class Order(BaseModel):
         sdk = mercadopago.SDK(settings.MERCADOPAGO['ACCESS_TOKEN'])
 
         items = []
-        items.extend([{
-            "title": self.ticket_type.name,
-            "quantity": 1,
-            "unit_price": ticket.price,
-        } for ticket in self.ticket_set.all() if ticket.price >= 0])
-
-        if self.donation_art:
-            items.append({
-                "title": 'Contribución Becas de Arte',
-                "quantity": 1,
-                "unit_price": float(self.donation_art),
-            })
-
-        if self.donation_venue:
-            items.append({
-                "title": 'Contribución a La Sede',
-                "quantity": 1,
-                "unit_price": float(self.donation_venue),
-            })
-
-        if self.donation_grant:
-            items.append({
-                "title": 'Contribución a Becas No Tengo Un Mango',
-                "quantity": 1,
-                "unit_price": float(self.donation_grant),
-            })
 
         preference_data = {
             "items": items,
@@ -336,7 +306,7 @@ class Order(BaseModel):
             "auto_return": "approved",
             # IPN makes the thing go faulty. Is it worthy to investigate?
             # "notification_url": settings.APP_URL + reverse("payment_notification"),
-            "statement_descriptor": "Fuego Austral 2022",
+            "statement_descriptor": self.event.organization.name if self.event and self.event.organization else self.event.name if self.event else "Ticketera",
             "external_reference": self.id,
         }
 

@@ -1,0 +1,67 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Miembros — {{ organization.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Miembros de {{ organization.name }}</h2>
+    <a href="{% url 'dashboard_event_list' org_slug=organization.slug %}" class="btn btn-outline-secondary">← Eventos</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Agregar miembro</div>
+    <div class="card-body">
+        <form method="post" action="{% url 'dashboard_member_add' org_slug=organization.slug %}" class="row g-2 align-items-end">
+            {% csrf_token %}
+            <div class="col-md-5">
+                <label class="form-label">Email del usuario</label>
+                <input type="email" name="email" class="form-control" placeholder="usuario@ejemplo.com" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Rol</label>
+                <select name="role" class="form-select">
+                    <option value="admin">Admin</option>
+                    <option value="editor" selected>Editor</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-success w-100">Agregar</button>
+            </div>
+        </form>
+        <small class="text-muted mt-1 d-block">El usuario debe estar registrado en el sistema.</small>
+    </div>
+</div>
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Miembro desde</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in memberships %}
+        <tr>
+            <td>{{ m.user.get_full_name|default:m.user.username }}</td>
+            <td>{{ m.user.email }}</td>
+            <td><span class="badge bg-{% if m.role == 'owner' %}danger{% elif m.role == 'admin' %}primary{% else %}secondary{% endif %}">{{ m.get_role_display }}</span></td>
+            <td>{{ m.created_at|date:"d/m/Y" }}</td>
+            <td>
+                {% if m.user != request.user %}
+                <form method="post" action="{% url 'dashboard_member_remove' org_slug=organization.slug membership_id=m.pk %}" class="d-inline"
+                      onsubmit="return confirm('¿Eliminar a {{ m.user.email }}?')">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-danger">Eliminar</button>
+                </form>
+                {% else %}
+                <span class="text-muted small">Vos</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted">Sin miembros aún.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

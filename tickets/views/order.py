@@ -12,7 +12,7 @@ from django.conf import settings
 
 from events.models import Event
 from tickets.models import Order, TicketType, OrderTicket, Coupon, Ticket
-from tickets.forms import OrderForm, CheckoutTicketSelectionForm, CheckoutDonationsForm, TicketForm
+from tickets.forms import OrderForm, CheckoutTicketSelectionForm, TicketForm
 
 from .utils import is_order_valid, _complete_order
 
