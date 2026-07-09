@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: ticketera
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn deprepagos.wsgi:application"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: deprepagos.settings_render
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: DB_HOST
+        fromDatabase:
+          name: ticketera-db
+          property: host
+      - key: DB_USER
+        fromDatabase:
+          name: ticketera-db
+          property: user
+      - key: DB_DATABASE
+        fromDatabase:
+          name: ticketera-db
+          property: database
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: ticketera-db
+          property: password
+      - key: DB_PORT
+        fromDatabase:
+          name: ticketera-db
+          property: port
+      # Set these manually in Render dashboard:
+      # - key: MERCADOPAGO_PUBLIC_KEY
+      # - key: MERCADOPAGO_ACCESS_TOKEN
+      # - key: MERCADOPAGO_WEBHOOK_SECRET
+      # - key: GOOGLE_CLIENT_ID
+      # - key: GOOGLE_CLIENT_SECRET
+      # - key: DEFAULT_FROM_EMAIL
+      # - key: EMAIL_HOST
+      # - key: EMAIL_PORT
+      # - key: EMAIL_HOST_USER
+      # - key: EMAIL_HOST_PASSWORD
+
+databases:
+  - name: ticketera-db
+    databaseName: ticketera
+    plan: free
