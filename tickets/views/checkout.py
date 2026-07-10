@@ -304,7 +304,8 @@ def order_summary(request, event_slug=None):
             "external_reference": str(order.key),
         }
 
-        sdk = mercadopago.SDK(settings.MERCADOPAGO['ACCESS_TOKEN'])
+        sdk = mercadopago.SDK(event.organization.mp_access_token)
+        preference_data['marketplace_fee'] = event.organization.mp_marketplace_fee_for(total_amount)
         response = sdk.preference().create(preference_data)['response']
 
         order.response = response

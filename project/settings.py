@@ -224,6 +224,8 @@ MERCADOPAGO = {
     'WEBHOOK_SECRET': os.environ.get(f'MERCADOPAGO_WEBHOOK_SECRET{_MP_SUFFIX}'),
     'COLLECTOR_USER_ID': os.environ.get('MERCADOPAGO_COLLECTOR_USER_ID'),
     'TEST_MODE': _MP_TEST_MODE,
+    'APP_ID': os.environ.get('MERCADOPAGO_APP_ID'),
+    'CLIENT_SECRET': os.environ.get('MERCADOPAGO_CLIENT_SECRET'),
 }
 
 SEDE_SUBSCRIPTION_PLAN_IDS = [
@@ -340,7 +342,7 @@ ACCOUNT_ADAPTER = 'user_profile.adapters.AccountAdapter'
 
 # Login settings
 LOGIN_REDIRECT_URL = 'mi_fuego'
-LOGIN_URL = '/mi-fuego/login/'
+LOGIN_URL = '/mi-cuenta/login/'
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 ACCOUNT_AUTHENTICATION_METHOD = 'email'  # 'username_email', 'username'
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3

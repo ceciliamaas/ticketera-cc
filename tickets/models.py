@@ -284,9 +284,13 @@ class Order(BaseModel):
         logging.info(f'Order {self.id} confirmation email sent')
 
     def get_payment_preference(self):
-
         import mercadopago
-        sdk = mercadopago.SDK(settings.MERCADOPAGO['ACCESS_TOKEN'])
+        access_token = (
+            self.event.organization.mp_access_token
+            if self.event and self.event.organization and self.event.organization.mp_connected
+            else settings.MERCADOPAGO['ACCESS_TOKEN']
+        )
+        sdk = mercadopago.SDK(access_token)
 
         items = []
 

@@ -1118,7 +1118,7 @@
                 // Add cache-busting parameter and last update time
                 const timestamp = new Date().getTime();
                 const lastUpdateParam = lastUpdateTime ? `&last_update=${encodeURIComponent(lastUpdateTime)}` : '';
-                const response = await fetch(`/mi-fuego/mis-bonos/${eventSlug}/ajax/?t=${timestamp}${lastUpdateParam}`, {
+                const response = await fetch(`/mi-cuenta/mis-bonos/${eventSlug}/ajax/?t=${timestamp}${lastUpdateParam}`, {
                     method: 'GET',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
@@ -1582,7 +1582,7 @@ console.error('Error checking for updates:', error);
                 // Disable select while processing
                 this.disabled = true;
                 
-                fetch(`/mi-fuego/ticket/${ticketKey}/update-restriccion/`, {
+                fetch(`/mi-cuenta/ticket/${ticketKey}/update-restriccion/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',

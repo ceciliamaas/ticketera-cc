@@ -1,0 +1,74 @@
+{% extends "dashboard/base.html" %}
+{% block title %}MercadoPago — {{ organization.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>MercadoPago — {{ organization.name }}</h2>
+    <a href="{% url 'dashboard_event_list' org_slug=organization.slug %}" class="btn btn-outline-secondary">
+        <i class="fa-solid fa-arrow-left"></i> Volver a eventos
+    </a>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+{% if organization.mp_connected %}
+<div class="card border-success mb-4">
+    <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <span class="badge bg-success fs-6"><i class="fa-solid fa-check"></i> Cuenta conectada</span>
+            <span class="text-muted">Usuario MP: {{ organization.mp_user_id }}</span>
+        </div>
+        {% if organization.mp_token_expires_at %}
+            <p class="text-muted small mb-3">Token expira: {{ organization.mp_token_expires_at|date:"d/m/Y H:i" }}</p>
+        {% endif %}
+        <div class="d-flex gap-2">
+            <a href="{% url 'dashboard_mp_oauth_start' org_slug=organization.slug %}" class="btn btn-outline-primary">
+                <i class="fa-solid fa-rotate"></i> Reconectar
+            </a>
+            <form method="post" action="{% url 'dashboard_mp_disconnect' org_slug=organization.slug %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger"
+                        onclick="return confirm('¿Desconectar la cuenta? Los eventos publicados dejarán de poder procesar pagos.')">
+                    <i class="fa-solid fa-unlink"></i> Desconectar
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Comisión de marketplace</div>
+    <div class="card-body">
+        <p>
+            Comisión actual: <strong>{{ organization.mp_marketplace_fee_pct }}%</strong>
+            <span class="text-muted">(configurable desde el panel de administración)</span>
+        </p>
+        <p class="text-muted small">
+            La comisión se descuenta de cada pago y se deposita en la cuenta de la plataforma.
+            0% significa que el 100% del cobro va a tu cuenta.
+        </p>
+    </div>
+</div>
+
+{% else %}
+<div class="card border-warning mb-4">
+    <div class="card-body text-center py-5">
+        <i class="fa-solid fa-triangle-exclamation fa-3x text-warning mb-3"></i>
+        <h4>No hay cuenta de MercadoPago conectada</h4>
+        <p class="text-muted mb-4">
+            Para publicar eventos y cobrar entradas, necesitás conectar tu cuenta de MercadoPago.
+            El dinero de las ventas irá directamente a tu cuenta.
+        </p>
+        <a href="{% url 'dashboard_mp_oauth_start' org_slug=organization.slug %}" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-link"></i> Conectar cuenta de MercadoPago
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

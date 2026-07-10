@@ -8,9 +8,9 @@ from user_profile.views import my_ticket_view, profile_view
 urlpatterns = [
     path('favicon.ico', RedirectView.as_view(url='/static/img/favicon.png', permanent=True)),
     path('admin/', admin.site.urls),
-    path('mi-fuego/', include('allauth.urls')),
-    path('mi-fuego/', include('caja.urls')),
-    path('mi-fuego/', include('user_profile.urls')),
+    path('mi-cuenta/', include('allauth.urls')),
+    path('mi-cuenta/', include('caja.urls')),
+    path('mi-cuenta/', include('user_profile.urls')),
     path('ckeditor5/', include('django_ckeditor_5.urls')),
     path('room_booking/', include('room_booking.urls')),
     path('', include('tickets.urls')),

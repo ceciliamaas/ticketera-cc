@@ -11,4 +11,9 @@ urlpatterns = [
     path('o/<slug:org_slug>/members/', views.dashboard_members, name='dashboard_members'),
     path('o/<slug:org_slug>/members/add/', views.dashboard_member_add, name='dashboard_member_add'),
     path('o/<slug:org_slug>/members/<int:membership_id>/remove/', views.dashboard_member_remove, name='dashboard_member_remove'),
+    # MercadoPago Marketplace
+    path('o/<slug:org_slug>/mercadopago/', views.dashboard_mp_connect, name='dashboard_mp_connect'),
+    path('o/<slug:org_slug>/mercadopago/connect/', views.dashboard_mp_oauth_start, name='dashboard_mp_oauth_start'),
+    path('o/<slug:org_slug>/mercadopago/disconnect/', views.dashboard_mp_disconnect, name='dashboard_mp_disconnect'),
+    path('mp/callback/', views.dashboard_mp_callback, name='dashboard_mp_callback'),
 ]
