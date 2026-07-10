@@ -590,62 +590,20 @@ def transferable_tickets_view(request, event_slug=None):
 @login_required
 def complete_profile(request):
     profile = request.user.profile
-    error_message = None
-    code_sent = False
 
-    if profile.profile_completion == "NONE":
-        if request.method == "POST":
-            form = ProfileStep1Form(request.POST, instance=profile, user=request.user)
-            if form.is_valid():
-                form.save()
-                profile.profile_completion = "INITIAL_STEP"
-                profile.save()
-                return redirect("complete_profile")
-        else:
-            form = ProfileStep1Form(instance=profile, user=request.user)
-        return render(request, "account/complete_profile_step1.html", {"form": form})
-
-    elif profile.profile_completion == "INITIAL_STEP":
-        form = ProfileStep2Form(request.POST or None, instance=profile)
-        if request.method == "POST":
-            if "send_code" in request.POST:
-                if form.is_valid():
-                    form.save()
-                    # Check if phone verification is disabled
-                    if getattr(settings, 'DISABLE_PHONE_VERIFICATION', False):
-                        # Skip verification and mark profile as complete
-                        profile.profile_completion = "COMPLETE"
-                        profile.save()
-                        return profile_congrats(request)
-                    else:
-                        form.send_verification_code()
-                        code_sent = True
-            elif "verify_code" in request.POST:
-                code_sent = True
-                form = ProfileStep2Form(request.POST, instance=profile, code_sent=True)
-                if form.is_valid():
-                    if form.verify_code():
-                        profile.profile_completion = "COMPLETE"
-                        profile.save()
-                        return profile_congrats(request)
-                    else:
-                        error_message = "Código inválido. Por favor, intenta de nuevo."
-            else:
-                form = ProfileStep2Form(request.POST, instance=profile, code_sent=True)
-
-        return render(
-            request,
-            "account/complete_profile_step2.html",
-            {
-                "form": form,
-                "error_message": error_message,
-                "code_sent": code_sent,
-                "profile": profile,
-                "disable_phone_verification": getattr(settings, 'DISABLE_PHONE_VERIFICATION', False),
-            },
-        )
-    else:
+    if profile.profile_completion == "COMPLETE":
         return redirect("home")
+
+    if request.method == "POST":
+        form = ProfileStep1Form(request.POST, instance=profile, user=request.user)
+        if form.is_valid():
+            form.save()
+            profile.profile_completion = "COMPLETE"
+            profile.save()
+            return profile_congrats(request)
+    else:
+        form = ProfileStep1Form(instance=profile, user=request.user)
+    return render(request, "account/complete_profile_step1.html", {"form": form})
 
 
 @login_required

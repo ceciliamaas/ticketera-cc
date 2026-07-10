@@ -24,7 +24,7 @@
                         <span class="mx-3">o</span>
                         <div class="flex-grow-1 border-top"></div>
                     </div>
-                    <form method="post" action="{% url 'account_signup' %}" autocomplete="off">
+                    <form method="post" action="{% url 'account_signup' %}" autocomplete="off" id="signup-form">
                         {% csrf_token %}
                         <div class="form-group d-flex flex-column w-100 gap-3">
                             {% if form.errors %}
@@ -37,6 +37,13 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <input type="text"
+                                   class="form-control"
+                                   id="id_first_name"
+                                   name="first_name"
+                                   placeholder="Nombre/s"
+                                   required
+                                   autocomplete="given-name">
                             <input type="email"
                                    class="form-control"
                                    id="id_email"
@@ -59,7 +66,7 @@
                                    autocomplete="new-password"
                                    required>
                             {{ redirect_field }}
-                            <button type="submit" class="btn btn-primary">Registrarme</button>
+                            <button type="submit" id="submit-button" class="btn btn-primary">Registrarme</button>
                         </div>
                     </form>
                 </div>
@@ -79,7 +86,5 @@
             submitButton.disabled = true;
             submitButton.innerHTML = 'Cargando...';
         });
-
-
     </script>
 {% endblock %}

@@ -334,6 +334,10 @@ ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 
+# Custom signup form and adapter
+ACCOUNT_FORMS = {'signup': 'user_profile.forms.CustomSignupForm'}
+ACCOUNT_ADAPTER = 'user_profile.adapters.AccountAdapter'
+
 # Login settings
 LOGIN_REDIRECT_URL = 'mi_fuego'
 LOGIN_URL = '/mi-fuego/login/'

@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import PasswordChangeForm
 from django.conf import settings
+from allauth.account.forms import SignupForm
 from events.models import Event, EventRequest, EventRequestTicketType
 from tickets.models import TicketType, NewTicket, Order
 from .models import Profile
@@ -9,6 +10,21 @@ from twilio.rest import Client
 from twilio.base.exceptions import TwilioException
 
 User = get_user_model()
+
+
+class CustomSignupForm(SignupForm):
+    first_name = forms.CharField(
+        max_length=30, label='Nombre/s',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingresa tu nombre'})
+    )
+    last_name = forms.CharField(
+        max_length=30, label='Apellido/s', required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingresa tu apellido'})
+    )
+
+    def save(self, request):
+        user = super().save(request)
+        return user
 
 
 class CajaEmitirBonoForm(forms.Form):
@@ -95,22 +111,18 @@ class ProfileStep1Form(forms.ModelForm):
     """Formulario para el paso 1 del perfil"""
     first_name = forms.CharField(max_length=30, widget=forms.TextInput(attrs={'class': 'form-control'}))
     last_name = forms.CharField(max_length=30, widget=forms.TextInput(attrs={'class': 'form-control'}))
-    
+
     class Meta:
         model = Profile
-        fields = ['document_type', 'document_number']
-        widgets = {
-            'document_type': forms.Select(attrs={'class': 'form-select'}),
-            'document_number': forms.TextInput(attrs={'class': 'form-control'}),
-        }
-    
+        fields = []
+
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if self.user:
             self.fields['first_name'].initial = self.user.first_name
             self.fields['last_name'].initial = self.user.last_name
-    
+
     def save(self, commit=True):
         profile = super().save(commit=False)
         if self.user:
