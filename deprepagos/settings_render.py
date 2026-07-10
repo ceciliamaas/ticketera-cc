@@ -1,6 +1,7 @@
 from deprepagos.settings import *
 import os
 import json
+import base64
 
 DEBUG = False
 
@@ -25,16 +26,23 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Media files — Google Cloud Storage (only enabled when credentials are present)
 _gcs_credentials_path = os.environ.get('GCS_CREDENTIALS_FILE', '/etc/secrets/gcs-credentials.json')
-_gcs_credentials_json = os.environ.get('GCS_CREDENTIALS_JSON', '')
+_gcs_credentials_b64 = os.environ.get('GCS_CREDENTIALS_B64', '')
 _gcs_bucket = os.environ.get('GCS_BUCKET_NAME', '')
-if _gcs_bucket and (_gcs_credentials_json or os.path.exists(_gcs_credentials_path)):
+_gcs_info = None
+if _gcs_credentials_b64:
+    try:
+        _gcs_info = json.loads(base64.b64decode(_gcs_credentials_b64).decode())
+    except Exception:
+        pass
+elif os.path.exists(_gcs_credentials_path):
+    try:
+        with open(_gcs_credentials_path) as f:
+            _gcs_info = json.load(f)
+    except Exception:
+        pass
+if _gcs_bucket and _gcs_info:
     from google.oauth2 import service_account
-    if _gcs_credentials_json:
-        GS_CREDENTIALS = service_account.Credentials.from_service_account_info(
-            json.loads(_gcs_credentials_json)
-        )
-    else:
-        GS_CREDENTIALS = service_account.Credentials.from_service_account_file(_gcs_credentials_path)
+    GS_CREDENTIALS = service_account.Credentials.from_service_account_info(_gcs_info)
     GS_BUCKET_NAME = _gcs_bucket
     GS_DEFAULT_ACL = 'publicRead'
     GS_FILE_OVERWRITE = False
