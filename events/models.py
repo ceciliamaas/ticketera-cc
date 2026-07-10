@@ -65,7 +65,6 @@ class Event(BaseModel):
 
     # homepage
     header_image = models.ImageField(upload_to='events/heros', help_text=u"Dimensions: 1666px x 500px")
-    title = models.TextField()
     description = models.TextField()
 
     attendee_must_be_registered = models.BooleanField(default=True, help_text="If checked, all attendees must be registered users")

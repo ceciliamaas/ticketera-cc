@@ -54,7 +54,6 @@ class EventAdmin(admin.ModelAdmin):
     fields = (
         'organization', 'status',
         'name', 'slug',
-        'title',
         'location', 'location_url',
         'start', 'is_recurring',
         'max_tickets', 'max_tickets_per_order',
