@@ -1,5 +1,6 @@
 from deprepagos.settings import *
 import os
+import json
 
 DEBUG = False
 
@@ -24,10 +25,16 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Media files — Google Cloud Storage (only enabled when credentials are present)
 _gcs_credentials_path = os.environ.get('GCS_CREDENTIALS_FILE', '/etc/secrets/gcs-credentials.json')
+_gcs_credentials_json = os.environ.get('GCS_CREDENTIALS_JSON', '')
 _gcs_bucket = os.environ.get('GCS_BUCKET_NAME', '')
-if os.path.exists(_gcs_credentials_path) and _gcs_bucket:
+if _gcs_bucket and (_gcs_credentials_json or os.path.exists(_gcs_credentials_path)):
     from google.oauth2 import service_account
-    GS_CREDENTIALS = service_account.Credentials.from_service_account_file(_gcs_credentials_path)
+    if _gcs_credentials_json:
+        GS_CREDENTIALS = service_account.Credentials.from_service_account_info(
+            json.loads(_gcs_credentials_json)
+        )
+    else:
+        GS_CREDENTIALS = service_account.Credentials.from_service_account_file(_gcs_credentials_path)
     GS_BUCKET_NAME = _gcs_bucket
     GS_DEFAULT_ACL = 'publicRead'
     GS_FILE_OVERWRITE = False
