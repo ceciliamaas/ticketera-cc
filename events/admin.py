@@ -30,6 +30,17 @@ class TicketTypeInline(admin.TabularInline):
     def get_readonly_fields(self, request, obj=None):
         return ()
 
+    def has_add_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        return _user_org_ids(request.user).exists()
+
+    def has_change_permission(self, request, obj=None):
+        return self.has_add_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        return self.has_add_permission(request, obj)
+
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
