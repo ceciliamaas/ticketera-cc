@@ -39,7 +39,7 @@ ALLOWED_HOSTS = [
     'localhost',
     'bonos.fa2022.org',
     'eventos.fuegoaustral.org',
-    'https://hexaplaric-branchlike-zain.ngrok-free.dev',
+    'hexaplaric-branchlike-zain.ngrok-free.dev',
     os.environ.get('EXTRA_HOST')
 ]
 print(f'ALLOWED_HOSTS: {ALLOWED_HOSTS}')
@@ -215,11 +215,15 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )
 
+_MP_TEST_MODE = os.environ.get('MERCADOPAGO_TEST_MODE', 'False') == 'True'
+_MP_SUFFIX = '_TEST' if _MP_TEST_MODE else ''
+
 MERCADOPAGO = {
-    'PUBLIC_KEY': os.environ.get('MERCADOPAGO_PUBLIC_KEY'),
-    'ACCESS_TOKEN': os.environ.get('MERCADOPAGO_ACCESS_TOKEN'),
-    'WEBHOOK_SECRET': os.environ.get('MERCADOPAGO_WEBHOOK_SECRET'),
+    'PUBLIC_KEY': os.environ.get(f'MERCADOPAGO_PUBLIC_KEY{_MP_SUFFIX}'),
+    'ACCESS_TOKEN': os.environ.get(f'MERCADOPAGO_ACCESS_TOKEN{_MP_SUFFIX}'),
+    'WEBHOOK_SECRET': os.environ.get(f'MERCADOPAGO_WEBHOOK_SECRET{_MP_SUFFIX}'),
     'COLLECTOR_USER_ID': os.environ.get('MERCADOPAGO_COLLECTOR_USER_ID'),
+    'TEST_MODE': _MP_TEST_MODE,
 }
 
 SEDE_SUBSCRIPTION_PLAN_IDS = [
@@ -228,6 +232,11 @@ SEDE_SUBSCRIPTION_PLAN_IDS = [
     if plan_id.strip()
 ]
 SEDE_DEFAULT_PLAN_ID = '2c9380847dbdc0a1017dbe5e16a1005c'
+
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 EMAIL_HOST = os.environ.get('EMAIL_HOST')
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')

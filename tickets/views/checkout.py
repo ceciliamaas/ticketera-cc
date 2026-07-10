@@ -247,9 +247,6 @@ def order_summary(request, event_slug=None):
                 dni=request.user.profile.document_number,
                 amount=total_amount,
                 status=Order.OrderStatus.PENDING,
-                donation_art=donations.get('donation_art', 0),
-                donation_venue=donations.get('donation_venue', 0),
-                donation_grant=donations.get('donation_grant', 0),
                 event=event,
                 user=request.user,
                 order_type=Order.OrderType.ONLINE_PURCHASE,
@@ -302,6 +299,7 @@ def order_summary(request, event_slug=None):
                 "pending": settings.APP_URL + reverse("checkout_payment_callback", kwargs={'order_key': order.key}),
             },
             "auto_return": "approved",
+            "notification_url": settings.APP_URL + reverse("mercadopago_webhook"),
             "statement_descriptor": event.name,
             "external_reference": str(order.key),
         }
