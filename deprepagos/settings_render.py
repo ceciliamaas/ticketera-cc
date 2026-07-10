@@ -44,7 +44,7 @@ if _gcs_bucket and _gcs_info:
     from google.oauth2 import service_account
     GS_CREDENTIALS = service_account.Credentials.from_service_account_info(_gcs_info)
     GS_BUCKET_NAME = _gcs_bucket
-    GS_DEFAULT_ACL = 'publicRead'
+    GS_DEFAULT_ACL = None  # Bucket uses uniform access control — no per-object ACLs
     GS_FILE_OVERWRITE = False
     DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
     MEDIA_URL = f'https://storage.googleapis.com/{_gcs_bucket}/'
