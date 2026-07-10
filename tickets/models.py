@@ -304,10 +304,9 @@ class Order(BaseModel):
                 "pending": settings.APP_URL + reverse("payment_pending_callback", kwargs={'order_key': self.key})
             },
             "auto_return": "approved",
-            # IPN makes the thing go faulty. Is it worthy to investigate?
-            # "notification_url": settings.APP_URL + reverse("payment_notification"),
+            "notification_url": settings.APP_URL + reverse("mercadopago_webhook"),
             "statement_descriptor": self.event.organization.name if self.event and self.event.organization else self.event.name if self.event else "Ticketera",
-            "external_reference": self.id,
+            "external_reference": str(self.key),
         }
 
         response = sdk.preference().create(preference_data)['response']
@@ -458,7 +457,7 @@ class Ticket(TicketPerson, BaseModel):
         return f'({self.order.status}) {self.first_name} {self.last_name}'
 
     def get_absolute_url(self):
-        return reverse('ticket_detail', args=(self.key,))
+        return reverse('public_ticket_detail', args=(self.key,))
 
     def send_email(self):
         # img = qrcode.make(f'{settings.APP_URL}{url}')

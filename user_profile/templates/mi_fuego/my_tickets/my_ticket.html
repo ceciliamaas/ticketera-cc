@@ -38,7 +38,7 @@
                 {% else %}<span class="badge bg-success">Válido</span>{% endif %}
               </td>
               <td>
-                <a href="{% url 'ticket_detail' t.key %}" class="btn btn-sm btn-outline-secondary">Ver</a>
+                <a href="{% url 'public_ticket_detail' t.key %}" class="btn btn-sm btn-outline-secondary">Ver</a>
               </td>
             </tr>
             {% endfor %}

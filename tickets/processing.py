@@ -1,6 +1,7 @@
 import logging
 
 from django.db import transaction
+from django.db.transaction import on_commit
 
 
 def mint_tickets(order):
@@ -45,7 +46,7 @@ def mint_tickets(order):
                 logging.info(f"Minted {ticket}")
 
 
-        order.send_confirmation_email()
+        on_commit(lambda: order.send_confirmation_email())
 
     except AttributeError as e:
         logging.error(f"Attribute error in minting tickets: {str(e)}")

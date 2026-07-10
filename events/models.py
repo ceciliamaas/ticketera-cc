@@ -156,7 +156,7 @@ class Event(BaseModel):
         return True
 
     def transfer_period(self):
-        if self.end < timezone.now():
+        if self.end and self.end < timezone.now():
             return False
         if self.transfers_enabled_until and self.transfers_enabled_until < timezone.now():
             return False

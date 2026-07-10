@@ -117,7 +117,8 @@ def free_order_confirmation(request, order_key):
 
 def payment_success(request, order_key):
     order = Order.objects.get(key=order_key)
-    order.response = request.GET
+    order.response = request.GET.dict()
+    order.save(update_fields=['response'])
     return HttpResponseRedirect(order.get_resource_url())
 
 def payment_failure(request):
@@ -151,25 +152,33 @@ def payment_notification(request):
 
 @login_required
 def check_order_status(request, order_key):
-    order = Order.objects.get(key=order_key)
+    try:
+        order = Order.objects.get(key=order_key)
+    except Order.DoesNotExist:
+        return JsonResponse({"status": "error"}, status=404)
+
     if order.email != request.user.email:
         return HttpResponseForbidden('Forbidden')
 
     payload = {"status": order.status}
     if order.status == Order.OrderStatus.CONFIRMED:
-        from logros.services import check_and_unlock_for_user, get_pending_celebrations
+        try:
+            from logros.services import check_and_unlock_for_user, get_pending_celebrations
+            check_and_unlock_for_user(request.user)
+            pending = get_pending_celebrations(request.user)
+            payload['new_achievements'] = [
+                {
+                    'slug': ua.achievement.slug,
+                    'name': ua.achievement.name,
+                    'description': ua.achievement.description,
+                    'image_url': ua.achievement.image_url,
+                }
+                for ua in pending
+            ]
+        except Exception as e:
+            logging.warning('check_order_status: logros service error: %s', e)
+            payload['new_achievements'] = []
 
-        check_and_unlock_for_user(request.user)
-        pending = get_pending_celebrations(request.user)
-        payload['new_achievements'] = [
-            {
-                'slug': ua.achievement.slug,
-                'name': ua.achievement.name,
-                'description': ua.achievement.description,
-                'image_url': ua.achievement.image_url,
-            }
-            for ua in pending
-        ]
     return JsonResponse(payload)
 
 @login_required
@@ -181,6 +190,34 @@ def checkout_payment_callback(request, order_key):
     order = Order.objects.get(key=order_key)
     if order.email != request.user.email:
         return HttpResponseForbidden('Forbidden')
+
+    # Fallback: MP includes payment_id + status in the redirect URL.
+    # If the order is still PENDING and MP says approved, verify directly
+    # so the user isn't stuck waiting for a webhook that may be delayed.
+    if order.status == Order.OrderStatus.PENDING:
+        payment_id = request.GET.get('payment_id') or request.GET.get('collection_id')
+        mp_status = request.GET.get('status') or request.GET.get('collection_status')
+        if payment_id and mp_status == 'approved':
+            try:
+                sdk = mercadopago.SDK(settings.MERCADOPAGO['ACCESS_TOKEN'])
+                payment = sdk.payment().get(payment_id)['response']
+                if (
+                    payment.get('status') == 'approved'
+                    and str(payment.get('external_reference')) == str(order.key)
+                ):
+                    from django.db import transaction
+                    with transaction.atomic():
+                        order_qs = Order.objects.select_for_update().filter(
+                            key=order.key, status=Order.OrderStatus.PENDING
+                        )
+                        if order_qs.exists():
+                            o = order_qs.get()
+                            o.status = Order.OrderStatus.PROCESSING
+                            o.processor_callback = payment
+                            o.net_received_amount = payment.get('transaction_details', {}).get('net_received_amount')
+                            o.save()
+            except Exception as e:
+                logging.warning('checkout_payment_callback: MP fallback verification failed: %s', e)
 
     return render(request, 'checkout/payment_callback.html', {
         'order_key': order_key,
