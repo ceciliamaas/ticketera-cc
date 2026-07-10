@@ -6,11 +6,11 @@
 
 {% block branding %}
     <h1 id="site-name"><a href="{% url 'admin:index' %}">Ticketera — Admin</a></h1>
+    {% if not request.user.is_superuser %}
+        {% for m in request.user.organization_memberships.all %}
+            <span class="admin-org-badge">{{ m.organization.name }} · {{ m.get_role_display }}</span>
+        {% endfor %}
+    {% endif %}
 {% endblock %}
 
-{% block nav-global %}
-    <ul class="nav-global">
-        <li><a href="{% url 'admin:index' %}">Home</a></li>
-        <li><a href="{% url 'dashboard_home' %}">Dashboard organizaciones</a></li>
-    </ul>
-{% endblock %}
+{% block nav-global %}{% endblock %}

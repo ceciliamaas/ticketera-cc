@@ -19,6 +19,10 @@ class Organization(models.Model):
     slug = models.SlugField(max_length=200, unique=True)
     is_active = models.BooleanField(default=True)
     email = models.EmailField(blank=True)
+    photo = models.ImageField(upload_to='organizations/photos', blank=True, null=True, help_text="Default header image for events")
+    location = models.CharField(max_length=255, blank=True, help_text="Default venue name for events")
+    address = models.CharField(max_length=500, blank=True, help_text="Default physical address for events")
+    location_url = models.URLField(max_length=500, blank=True, help_text="Default location URL (e.g. Google Maps) for events")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

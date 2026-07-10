@@ -36,6 +36,7 @@ class Event(BaseModel):
     slug = models.SlugField(max_length=100, null=True, blank=True, help_text="URL-friendly identifier for the event")
     name = models.CharField(max_length=255)
     location = models.CharField(max_length=255, blank=True, help_text="Location of the event")
+    address = models.CharField(max_length=500, blank=True, help_text="Physical address of the event")
     location_url = models.URLField(max_length=500, blank=True, help_text="URL for the event location (e.g. Google Maps link)")
     has_volunteers = models.BooleanField(default=False)
     start = models.DateTimeField(verbose_name="Fecha del evento")
@@ -64,7 +65,7 @@ class Event(BaseModel):
     )
 
     # homepage
-    header_image = models.ImageField(upload_to='events/heros', help_text=u"Dimensions: 1666px x 500px")
+    header_image = models.ImageField(upload_to='events/heros', blank=True, null=True, help_text=u"Dimensions: 1666px x 500px. If left empty, the organization's photo will be used.")
     description = models.TextField()
 
     attendee_must_be_registered = models.BooleanField(default=True, help_text="If checked, all attendees must be registered users")

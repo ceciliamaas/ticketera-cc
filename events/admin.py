@@ -54,7 +54,7 @@ class EventAdmin(admin.ModelAdmin):
     fields = (
         'organization', 'status',
         'name', 'slug',
-        'location', 'location_url',
+        'location', 'address', 'location_url',
         'start', 'is_recurring',
         'max_tickets', 'max_tickets_per_order',
         'header_image', 'description',
@@ -97,3 +97,33 @@ class EventAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return self.has_view_permission(request, obj)
 
+    def get_changeform_initial_data(self, request):
+        """Pre-fill new event form with the user's organization defaults."""
+        initial = super().get_changeform_initial_data(request)
+        from organizations.models import Organization
+        org_ids = list(_user_org_ids(request.user))
+        if not org_ids:
+            return initial
+        try:
+            org = Organization.objects.get(id=org_ids[0])
+        except Organization.DoesNotExist:
+            return initial
+        if org.location:
+            initial.setdefault('location', org.location)
+        if org.address:
+            initial.setdefault('address', org.address)
+        if org.location_url:
+            initial.setdefault('location_url', org.location_url)
+        return initial
+
+    def save_model(self, request, obj, form, change):
+        # On new events: if no image was uploaded, inherit from the organization's photo
+        if not change and not obj.header_image and obj.organization_id:
+            from organizations.models import Organization
+            try:
+                org = Organization.objects.get(pk=obj.organization_id)
+                if org.photo:
+                    obj.header_image = org.photo.name  # reuse same file path, no re-upload
+            except Organization.DoesNotExist:
+                pass
+        super().save_model(request, obj, form, change)

@@ -39,28 +39,49 @@ class MembershipInline(admin.TabularInline):
 class OrganizationAdmin(admin.ModelAdmin):
     list_display = ['name', 'slug', 'is_active']
     search_fields = ['name', 'slug']
-    prepopulated_fields = {'slug': ('name',)}
     inlines = [MembershipInline]
 
+    def get_prepopulated_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return {'slug': ('name',)}
+        return {}
+
+    def get_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return ['name', 'slug', 'is_active', 'email', 'photo', 'location', 'address', 'location_url']
+        # Org admins can edit their own org's details but not slug/is_active/members
+        return ['name', 'email', 'photo', 'location', 'address', 'location_url']
+
+    def get_inlines(self, request, obj):
+        if request.user.is_superuser:
+            return [MembershipInline]
+        return []  # Org admins can't manage memberships directly
+
     def has_module_perms(self, user_obj):
-        return user_obj.is_superuser  # hidden from org admins
+        return True  # visible to org admins so they can edit their org
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(id__in=_user_org_ids(request.user))
 
     def has_view_permission(self, request, obj=None):
-        # Superusers can view all; org members need view permission so that
-        # the autocomplete endpoint (used in EventAdmin) doesn't return 403.
         if request.user.is_superuser:
             return True
         if obj is None:
-            # List-level: allow org members (autocomplete uses this path)
             return request.user.organization_memberships.exists()
-        # Object-level: only allow if the user belongs to that org
         return request.user.organization_memberships.filter(organization=obj).exists()
 
     def has_add_permission(self, request):
         return request.user.is_superuser
 
     def has_change_permission(self, request, obj=None):
-        return request.user.is_superuser
+        if request.user.is_superuser:
+            return True
+        if obj is None:
+            return request.user.organization_memberships.exists()
+        return request.user.organization_memberships.filter(organization=obj).exists()
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
