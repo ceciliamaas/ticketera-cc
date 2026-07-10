@@ -1,4 +1,4 @@
-from deprepagos.settings import *  # noqa
+from project.settings import *  # noqa
 
 MOCK_PHONE_VERIFICATION = True
 

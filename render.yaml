@@ -3,10 +3,10 @@ services:
     name: ticketera
     runtime: python
     buildCommand: "./build.sh"
-    startCommand: "gunicorn deprepagos.wsgi:application"
+    startCommand: "gunicorn project.wsgi:application"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
-        value: deprepagos.settings_render
+        value: project.settings_render
       - key: PYTHON_VERSION
         value: 3.10.0
       - key: SECRET_KEY

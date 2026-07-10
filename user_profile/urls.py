@@ -46,7 +46,7 @@ urlpatterns = [
     path("", my_fire_view, name="mi_fuego"),
     path("impersonation/stop/", stop_impersonation_view, name="stop_impersonation"),
 
-    # Ticket / event paths (new clean URLs registered from deprepagos/urls.py)
+    # Ticket / event paths (new clean URLs registered from project/urls.py)
     # These legacy paths are kept for redirect compatibility
     path("mis-bonos/", my_ticket_view, name="my_ticket"),
     path("mis-bonos/eventos-anteriores/", my_ticket_view, {"event_slug": "eventos-anteriores"}, name="my_ticket_past"),

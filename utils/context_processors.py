@@ -1,7 +1,7 @@
 import hashlib
 import hmac
 
-from deprepagos import settings
+from project import settings
 from events.models import Event, EventTermsAndConditions, EventTermsAndConditionsAcceptance
 from tickets.models import NewTicket, TicketType, NewTicketTransfer
 

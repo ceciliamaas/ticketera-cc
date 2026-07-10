@@ -81,7 +81,7 @@ INSTALLED_APPS = [
 
     'tickets.apps.TicketsConfig',
     'events.apps.EventsConfig',
-    'espaciozen.apps.EspaciozenConfig',
+    'room_booking.apps.RoomBookingConfig',
     'caja.apps.CajaConfig',
     'organizations.apps.OrganizationsConfig',
 ]
@@ -102,7 +102,7 @@ MIDDLEWARE = [
 
 ]
 
-ROOT_URLCONF = 'deprepagos.urls'
+ROOT_URLCONF = 'project.urls'
 
 TEMPLATES = [
     {
@@ -131,7 +131,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'deprepagos.wsgi.application'
+WSGI_APPLICATION = 'project.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
@@ -259,7 +259,7 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 try:
-    from deprepagos.local_settings import *
+    from project.local_settings import *
 
     INSTALLED_APPS.extend(EXTRA_INSTALLED_APPS)
 except ImportError:
@@ -328,7 +328,7 @@ ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 # Login settings
 LOGIN_REDIRECT_URL = 'mi_fuego'
 LOGIN_URL = '/mi-fuego/login/'
-ACCOUNT_LOGOUT_REDIRECT_URL = APP_URL
+ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 ACCOUNT_AUTHENTICATION_METHOD = 'email'  # 'username_email', 'username'
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 
@@ -450,6 +450,6 @@ CKEDITOR_5_CONFIGS = {
 
 # Allow local_settings to override any setting defined above
 try:
-    from deprepagos.local_settings import *  # noqa
+    from project.local_settings import *  # noqa
 except ImportError:
     pass

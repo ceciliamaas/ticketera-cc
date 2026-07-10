@@ -12,7 +12,7 @@ urlpatterns = [
     path('mi-fuego/', include('caja.urls')),
     path('mi-fuego/', include('user_profile.urls')),
     path('ckeditor5/', include('django_ckeditor_5.urls')),
-    path('espaciozen/', include('espaciozen.urls')),
+    path('room_booking/', include('room_booking.urls')),
     path('', include('tickets.urls')),
     path('dashboard/', include('organizations.urls')),
 

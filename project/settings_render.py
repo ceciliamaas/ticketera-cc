@@ -1,4 +1,4 @@
-from deprepagos.settings import *
+from project.settings import *
 import os
 import json
 import base64

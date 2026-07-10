@@ -69,9 +69,9 @@ def get_google_access_token():
 
 
 @login_required
-def espaciozen_home(request):
+def room_booking_home(request):
     """Vista principal que muestra el calendario de Google"""
-    calendar_id = "espaciozenlasedefa@gmail.com"
+    calendar_id = "room_bookinglasedefa@gmail.com"
     
     # Obtener reservas del usuario
     reservas_usuario = []
@@ -134,7 +134,7 @@ def espaciozen_home(request):
         'reservas': reservas_usuario,
     }
     
-    return render(request, 'espaciozen/home.html', context)
+    return render(request, 'room_booking/home.html', context)
 
 
 @login_required
@@ -159,7 +159,7 @@ def verificar_disponibilidad(request):
         if timezone.is_naive(fecha_fin):
             fecha_fin = timezone.make_aware(fecha_fin)
         
-        calendar_id = "espaciozenlasedefa@gmail.com"
+        calendar_id = "room_bookinglasedefa@gmail.com"
         
         # Obtener access token
         try:
@@ -241,7 +241,7 @@ def crear_reserva(request):
         if timezone.is_naive(fecha_fin):
             fecha_fin = timezone.make_aware(fecha_fin)
         
-        calendar_id = "espaciozenlasedefa@gmail.com"
+        calendar_id = "room_bookinglasedefa@gmail.com"
         
         # Obtener access token
         try:
@@ -352,7 +352,7 @@ def crear_reserva(request):
 def listar_reservas(request):
     """Lista las reservas del usuario actual"""
     try:
-        calendar_id = "espaciozenlasedefa@gmail.com"
+        calendar_id = "room_bookinglasedefa@gmail.com"
         access_token = get_google_access_token()
         email_usuario = request.user.email
         nombre_usuario = request.user.first_name or request.user.username
@@ -426,7 +426,7 @@ def editar_reserva(request):
         if timezone.is_naive(fecha_fin):
             fecha_fin = timezone.make_aware(fecha_fin)
         
-        calendar_id = "espaciozenlasedefa@gmail.com"
+        calendar_id = "room_bookinglasedefa@gmail.com"
         access_token = get_google_access_token()
         email_usuario = request.user.email
         nombre_usuario = request.user.first_name or request.user.username
@@ -508,7 +508,7 @@ def borrar_reserva(request):
         if not event_id:
             return JsonResponse({'error': 'ID de reserva requerido'}, status=400)
         
-        calendar_id = "espaciozenlasedefa@gmail.com"
+        calendar_id = "room_bookinglasedefa@gmail.com"
         access_token = get_google_access_token()
         email_usuario = request.user.email
         user_hash = get_user_hash(email_usuario)

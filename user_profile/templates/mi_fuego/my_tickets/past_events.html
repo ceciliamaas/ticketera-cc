@@ -8,17 +8,12 @@
 
     {% if not past_tickets_by_event %}
     <!-- No entradas section - only show when there are no past tickets -->
-    <div class="card text-center mb-4">
-        <div class="card-body d-flex justify-content-between flex-column align-items-center main-card-spacing gap-4">
-            <h3>No tenés entradas para próximos eventos</h3>
-            {% if has_available_tickets %}
-                {% if has_multiple_events %}
-                    <a class="btn btn-primary" href="/eventos">Ver eventos</a>
-                {% else %}
-                    <a class="btn btn-primary" href="{% url "select_tickets" %}">Adquirir entradas</a>
-                {% endif %}
-            {% endif %}
-        </div>
+        <div class="text-center py-5">
+      <i class="fa-solid fa-ticket text-muted mb-3" style="font-size:3rem;"></i>
+      <h4 class="text-muted">No tenés entradas de eventos pasados</h4>
+      {% if has_available_tickets %}
+        <a href="/" class="btn btn-primary mt-3">Ver eventos</a>
+      {% endif %}
     </div>
     {% endif %}
 
@@ -112,61 +107,40 @@
     </style>
 
     {% if past_tickets_by_event %}
-        <div class="alert alert-info text-start mb-4">
-            <div class="d-flex align-items-center gap-2">
-                <i class="fas fa-info-circle"></i>
-                <div>
-                    Estas son tus entradas de eventos anteriores. Las entradas de eventos finalizados son solo para referencia histórica.
-                </div>
-            </div>
-        </div>
-        
-        <!-- Past Events -->
+        <div class="container py-3">
         {% for event_key, event_data in past_tickets_by_event.items %}
             <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0">{{ event_data.event.name }}</h5>
-                    <small>{{ event_data.event.start|date:"d/m/Y" }} - {{ event_data.event.end|date:"d/m/Y" }}</small>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">{{ event_data.event.name }}</h5>
+                        {% if event_data.event.start %}
+                            <small class="text-muted"><i class="fa-regular fa-calendar me-1"></i>{{ event_data.event.start|date:"d/m/Y" }}</small>
+                        {% endif %}
+                        {% if event_data.event.location %}
+                            <small class="text-muted ms-3"><i class="fa-solid fa-location-dot me-1"></i>{{ event_data.event.location }}</small>
+                        {% endif %}
+                    </div>
+                    <span class="badge bg-secondary">Finalizado</span>
                 </div>
-                <div class="card-body">
-                    {% for ticket in event_data.tickets %}
-                        <div class="card mb-3 border">
-                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                <span><span class="ticket-id">#{{ ticket.key|stringformat:"s"|slice:"-2:" }}</span> {{ ticket.ticket_type }}</span>
-                                <span class="badge bg-secondary" style="color: white !important;">Evento Finalizado</span>
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
-                                    <div class="ticket-info w-100">
-                                        <div class="d-flex flex-column gap-2">
-                                            <div class="text-muted">
-                                                <span class="fw-bold">{{ ticket.ticket_type }} - ${{ ticket.price|floatformat:0|intcomma }}</span>
-                                            </div>
-                                            <div class="ticket-details mt-2">
-                                                <div class="d-flex align-items-center gap-2 mb-2">
-                                                    <i class="fas fa-calendar-alt text-muted"></i>
-                                                    <span class="text-muted">{{ ticket.event.start|date:"d/m/Y H:i" }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="qr-container my-3 my-md-0 mx-auto">
-                                        <div class="qr d-flex flex-column align-items-center">
-                                            <img src="data:image/png;base64,{{ ticket.qr_code }}"
-                                                 class="img-fluid"
-                                                 alt="QR Code"/>
-                                            <div class="text-center mt-2">
-                                                <small class="text-muted">{{ ticket.key|last_uuid_part }}</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr><th>Tipo</th><th>Precio</th><th>Estado</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in event_data.tickets %}
+                            <tr>
+                                <td>{{ ticket.ticket_type }}</td>
+                                <td>${{ ticket.price|floatformat:0|intcomma }}</td>
+                                <td><span class="badge bg-secondary">Usado</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         {% endfor %}
+        </div>
     {% endif %}
 
 {% endblock truecontent %}
