@@ -17,3 +17,6 @@ schema_only.sql
 
 # CSV reports (may contain sensitive data)
 *.csv
+# GCP service account keys
+*-credentials.json
+ticketera-*.json

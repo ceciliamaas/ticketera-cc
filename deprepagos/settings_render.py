@@ -22,7 +22,13 @@ MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Media files — for production use S3 or Render Disk
-# If using Render Disk, mount at /var/data/media and set:
-# MEDIA_ROOT = '/var/data/media'
-# DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+# Media files — Google Cloud Storage
+_gcs_credentials_path = os.environ.get('GCS_CREDENTIALS_FILE', '/etc/secrets/gcs-credentials.json')
+if os.path.exists(_gcs_credentials_path):
+    from google.oauth2 import service_account
+    GS_CREDENTIALS = service_account.Credentials.from_service_account_file(_gcs_credentials_path)
+GS_BUCKET_NAME = os.environ.get('GCS_BUCKET_NAME', '')
+GS_DEFAULT_ACL = 'publicRead'
+GS_FILE_OVERWRITE = False
+DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/'

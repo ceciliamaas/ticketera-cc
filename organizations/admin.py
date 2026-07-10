@@ -46,7 +46,15 @@ class OrganizationAdmin(admin.ModelAdmin):
         return user_obj.is_superuser  # hidden from org admins
 
     def has_view_permission(self, request, obj=None):
-        return request.user.is_superuser
+        # Superusers can view all; org members need view permission so that
+        # the autocomplete endpoint (used in EventAdmin) doesn't return 403.
+        if request.user.is_superuser:
+            return True
+        if obj is None:
+            # List-level: allow org members (autocomplete uses this path)
+            return request.user.organization_memberships.exists()
+        # Object-level: only allow if the user belongs to that org
+        return request.user.organization_memberships.filter(organization=obj).exists()
 
     def has_add_permission(self, request):
         return request.user.is_superuser
@@ -56,6 +64,12 @@ class OrganizationAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
+
+    def get_search_results(self, request, queryset, search_term):
+        qs, use_distinct = super().get_search_results(request, queryset, search_term)
+        if not request.user.is_superuser:
+            qs = qs.filter(id__in=_user_org_ids(request.user))
+        return qs, use_distinct
 
 
 @admin.register(OrganizationMembership)
