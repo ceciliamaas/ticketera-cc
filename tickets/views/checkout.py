@@ -342,9 +342,12 @@ def order_summary(request, event_slug=None):
         order.response = response
         order.save()
 
-        # Use sandbox checkout for test tokens (start with TEST-)
-        is_test_token = str(event.organization.mp_access_token).startswith('TEST-')
-        checkout_url = response.get('sandbox_init_point') if is_test_token else response.get('init_point')
+        # Use sandbox checkout when in test mode or when token is a test token
+        is_test = (
+            str(event.organization.mp_access_token).startswith('TEST-')
+            or settings.MERCADOPAGO.get('TEST_MODE', False)
+        )
+        checkout_url = response.get('sandbox_init_point') if is_test else response.get('init_point')
         return HttpResponseRedirect(checkout_url)
 
     return render(request, 'checkout/order_summary.html', {
