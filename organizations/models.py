@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.text import slugify
+import uuid
 
 
 class UserProxy(User):
@@ -126,4 +127,30 @@ def grant_staff_on_membership(sender, instance, created, **kwargs):
         ct = ContentType.objects.get_for_model(model_class)
         perms = Permission.objects.filter(content_type=ct)
         user.user_permissions.add(*perms)
+
+
+class OrganizationInvitation(models.Model):
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name='invitations'
+    )
+    email = models.EmailField()
+    role = models.CharField(
+        max_length=20,
+        choices=OrganizationMembership.Role.choices,
+        default=OrganizationMembership.Role.ADMIN,
+    )
+    token = models.UUIDField(default=uuid.uuid4, unique=True)
+    invited_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='sent_invitations')
+    created_at = models.DateTimeField(auto_now_add=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = [('organization', 'email')]
+
+    @property
+    def is_pending(self):
+        return self.accepted_at is None
+
+    def __str__(self):
+        return f'Invitación a {self.email} — {self.organization}'
 

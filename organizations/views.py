@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 from django.utils.text import slugify
 from events.models import Event
 from .forms import EventForm, OrganizationForm, TicketTypeFormSet
-from .models import Organization, OrganizationMembership
+from .models import Organization, OrganizationMembership, OrganizationInvitation
 from .permissions import get_authorized_organization, user_can_edit_event
 
 logger = logging.getLogger(__name__)
@@ -235,9 +235,11 @@ def dashboard_event_unpublish(request, org_slug, event_id):
 def dashboard_members(request, org_slug):
     organization = get_authorized_organization(request.user, org_slug, min_role='admin')
     memberships = organization.memberships.select_related('user').order_by('role', 'user__email')
+    invitations = organization.invitations.filter(accepted_at__isnull=True).order_by('-created_at')
     return render(request, 'dashboard/members.html', {
         'organization': organization,
         'memberships': memberships,
+        'invitations': invitations,
     })
 
 
@@ -245,23 +247,41 @@ def dashboard_members(request, org_slug):
 @require_POST
 def dashboard_member_add(request, org_slug):
     organization = get_authorized_organization(request.user, org_slug, min_role='admin')
-    email = request.POST.get('email', '').strip()
-    role = request.POST.get('role', OrganizationMembership.Role.EDITOR)
+    email = request.POST.get('email', '').strip().lower()
+    role = request.POST.get('role', OrganizationMembership.Role.ADMIN)
 
     try:
         user = User.objects.get(email__iexact=email)
+        _, created = OrganizationMembership.objects.get_or_create(
+            user=user, organization=organization,
+            defaults={'role': role},
+        )
+        if created:
+            messages.success(request, f'{email} agregado como {role}.')
+        else:
+            messages.warning(request, f'{email} ya es miembro.')
     except User.DoesNotExist:
-        messages.error(request, f'No user found with email "{email}".')
-        return redirect('dashboard_members', org_slug=org_slug)
+        # User doesn't have an account yet — create a pending invitation
+        _, created = OrganizationInvitation.objects.get_or_create(
+            organization=organization,
+            email=email,
+            defaults={'role': role, 'invited_by': request.user},
+        )
+        if created:
+            messages.success(request, f'Invitación enviada a {email}. Cuando se registre, tendrá acceso como {role}.')
+        else:
+            messages.warning(request, f'Ya existe una invitación pendiente para {email}.')
+    return redirect('dashboard_members', org_slug=org_slug)
 
-    _, created = OrganizationMembership.objects.get_or_create(
-        user=user, organization=organization,
-        defaults={'role': role},
-    )
-    if created:
-        messages.success(request, f'{email} added as {role}.')
-    else:
-        messages.warning(request, f'{email} is already a member.')
+
+@login_required
+@require_POST
+def dashboard_invitation_cancel(request, org_slug, invitation_id):
+    organization = get_authorized_organization(request.user, org_slug, min_role='admin')
+    invitation = get_object_or_404(OrganizationInvitation, pk=invitation_id, organization=organization)
+    email = invitation.email
+    invitation.delete()
+    messages.success(request, f'Invitación a {email} cancelada.')
     return redirect('dashboard_members', org_slug=org_slug)
 
 

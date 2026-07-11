@@ -23,7 +23,7 @@
                 <button type="submit" class="btn btn-success w-100">Agregar</button>
             </div>
         </form>
-        <small class="text-muted mt-1 d-block">El usuario debe estar registrado en el sistema.</small>
+        <small class="text-muted mt-1 d-block">Si el usuario no tiene cuenta, se enviará una invitación que se activará cuando se registre.</small>
     </div>
 </div>
 
@@ -61,4 +61,35 @@
         {% endfor %}
     </tbody>
 </table>
+
+{% if invitations %}
+<h5 class="mt-4 mb-3">Invitaciones pendientes</h5>
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Enviada</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for inv in invitations %}
+        <tr>
+            <td>{{ inv.email }}</td>
+            <td><span class="badge bg-secondary">{{ inv.get_role_display }}</span></td>
+            <td class="text-muted small">{{ inv.created_at|date:"d/m/Y" }}</td>
+            <td>
+                <span class="badge bg-warning text-dark me-2">Invitación enviada</span>
+                <form method="post" action="{% url 'dashboard_invitation_cancel' org_slug=organization.slug invitation_id=inv.pk %}" class="d-inline"
+                      onsubmit="return confirm('¿Cancelar la invitación a {{ inv.email }}?')">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-danger">Cancelar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
 {% endblock %}
