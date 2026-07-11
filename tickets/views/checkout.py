@@ -312,12 +312,12 @@ def order_summary(request, event_slug=None):
                 "identification": {"type": "DNI", "number": order.dni},
             },
             "back_urls": {
-                "success": settings.APP_URL + reverse("checkout_payment_callback", kwargs={'order_key': order.key}),
-                "failure": settings.APP_URL + reverse("order_summary"),
-                "pending": settings.APP_URL + reverse("checkout_payment_callback", kwargs={'order_key': order.key}),
+                "success": settings.APP_URL.rstrip('/') + reverse("checkout_payment_callback", kwargs={'order_key': order.key}),
+                "failure": settings.APP_URL.rstrip('/') + reverse("order_summary"),
+                "pending": settings.APP_URL.rstrip('/') + reverse("checkout_payment_callback", kwargs={'order_key': order.key}),
             },
             "auto_return": "approved",
-            "notification_url": settings.APP_URL + reverse("mercadopago_webhook"),
+            "notification_url": settings.APP_URL.rstrip('/') + reverse("mercadopago_webhook"),
             "statement_descriptor": event.name,
             "external_reference": str(order.key),
         }

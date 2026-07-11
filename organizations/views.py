@@ -302,7 +302,7 @@ def dashboard_mp_oauth_start(request, org_slug):
         messages.error(request, 'MERCADOPAGO_APP_ID no está configurado.')
         return redirect('dashboard_mp_connect', org_slug=org_slug)
 
-    callback_url = settings.APP_URL + reverse('dashboard_mp_callback')
+    callback_url = settings.APP_URL.rstrip('/') + reverse('dashboard_mp_callback')
     params = urllib.parse.urlencode({
         'client_id': app_id,
         'response_type': 'code',
@@ -324,7 +324,7 @@ def dashboard_mp_callback(request):
 
     organization = get_object_or_404(Organization, slug=org_slug)
 
-    callback_url = settings.APP_URL + reverse('dashboard_mp_callback')
+    callback_url = settings.APP_URL.rstrip('/') + reverse('dashboard_mp_callback')
     try:
         resp = requests.post(
             'https://api.mercadopago.com/oauth/token',
