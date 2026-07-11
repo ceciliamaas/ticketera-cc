@@ -23,6 +23,17 @@ def _checkout_door_context(event, ticket_data):
     }
 
 
+def _parse_occurrence_date(occ_ts):
+    """Convert Unix timestamp string to aware datetime, or None."""
+    if not occ_ts:
+        return None
+    try:
+        from datetime import datetime, timezone as dt_tz
+        return datetime.fromtimestamp(int(occ_ts), tz=dt_tz.utc)
+    except (ValueError, TypeError):
+        return None
+
+
 @login_required
 def select_tickets(request, event_slug=None):
     # Get event from URL slug or request
@@ -37,7 +48,9 @@ def select_tickets(request, event_slug=None):
     store_event_in_session(request, event)
     
     if request.method == 'POST':
-        form = CheckoutTicketSelectionForm(request.POST, user=request.user, event=event)
+        occ_ts = request.session.get('occ_ts')
+        occurrence_date = _parse_occurrence_date(occ_ts)
+        form = CheckoutTicketSelectionForm(request.POST, user=request.user, event=event, occurrence_date=occurrence_date)
         if form.is_valid():
             request.session['ticket_selection'] = form.cleaned_data
             # Skip donations step — set empty donations and order_sid directly
@@ -57,6 +70,7 @@ def select_tickets(request, event_slug=None):
                 'tickets_remaining': tickets_remaining,
                 'current_event': event,
                 'event': event,
+                'occurrence_date': _parse_occurrence_date(request.session.get('occ_ts')),
             }
             context.update(_checkout_door_context(event, form.ticket_data))
             return render(request, 'checkout/select_tickets.html', context)
@@ -72,11 +86,16 @@ def select_tickets(request, event_slug=None):
         request.session['event_id'] = event.id
         request.session.pop('ticket_selection', None)
         request.session.pop('donations', None)
+        occ_ts = request.GET.get('occ')
+        request.session['occ_ts'] = occ_ts  # store (None clears previous)
         ticket_id = request.GET.get('ticket_id')
         if ticket_id:
             initial_data[f'ticket_{ticket_id}_quantity'] = 1
+    else:
+        occ_ts = request.session.get('occ_ts')
 
-    form = CheckoutTicketSelectionForm(initial=initial_data, event=event)
+    occurrence_date = _parse_occurrence_date(occ_ts)
+    form = CheckoutTicketSelectionForm(initial=initial_data, event=event, occurrence_date=occurrence_date)
 
     context = {
         'form': form,
@@ -85,6 +104,7 @@ def select_tickets(request, event_slug=None):
         'tickets_remaining': tickets_remaining,
         'current_event': event,
         'event': event,
+        'occurrence_date': occurrence_date,
     }
     context.update(_checkout_door_context(event, form.ticket_data))
     return render(request, 'checkout/select_tickets.html', context)
@@ -303,6 +323,12 @@ def order_summary(request, event_slug=None):
             "statement_descriptor": event.name,
             "external_reference": str(order.key),
         }
+
+        # Free order: confirm immediately, skip MercadoPago
+        if total_amount == 0:
+            order.status = Order.OrderStatus.CONFIRMED
+            order.save(update_fields=['status'])
+            return redirect(reverse("checkout_payment_callback", kwargs={'order_key': order.key}))
 
         sdk = mercadopago.SDK(event.organization.mp_access_token)
         preference_data['marketplace_fee'] = event.organization.mp_marketplace_fee_for(total_amount)

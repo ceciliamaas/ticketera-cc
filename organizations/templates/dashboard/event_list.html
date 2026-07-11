@@ -4,9 +4,6 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Eventos de {{ organization.name }}</h2>
     <div class="d-flex gap-2">
-        <a href="{% url 'dashboard_members' org_slug=organization.slug %}" class="btn btn-outline-secondary">
-            <i class="fa-solid fa-users"></i> Miembros
-        </a>
         <a href="{% url 'dashboard_event_create' org_slug=organization.slug %}" class="btn btn-success">
             + Nuevo evento
         </a>
@@ -29,32 +26,32 @@
         <tr>
             <td>{{ event.name }}</td>
             <td>
-                {% if event.status == 'published' %}
-                    <span class="badge bg-success">Publicado</span>
-                {% else %}
-                    <span class="badge bg-secondary">Borrador</span>
-                {% endif %}
+                <form method="post"
+                      action="{% url 'dashboard_event_set_status' org_slug=organization.slug event_id=event.pk %}"
+                      class="d-inline">
+                    {% csrf_token %}
+                    <select name="status" class="form-select form-select-sm w-auto"
+                            onchange="this.form.submit()"
+                            style="min-width:130px">
+                        <option value="published" {% if event.status == 'published' %}selected{% endif %}>Publicado</option>
+                        <option value="draft" {% if event.status == 'draft' %}selected{% endif %}>Borrador</option>
+                    </select>
+                </form>
             </td>
             <td>{{ event.start|date:"d/m/Y H:i" }}</td>
             <td>{{ event.end|date:"d/m/Y H:i" }}</td>
             <td>
                 <a href="{% url 'dashboard_event_edit' org_slug=organization.slug event_id=event.pk %}"
                    class="btn btn-sm btn-outline-primary">Editar</a>
-                {% if event.status == 'draft' %}
-                    <form method="post"
-                          action="{% url 'dashboard_event_publish' org_slug=organization.slug event_id=event.pk %}"
-                          class="d-inline">
-                        {% csrf_token %}
-                        <button class="btn btn-sm btn-success">Publicar</button>
-                    </form>
-                {% else %}
-                    <form method="post"
-                          action="{% url 'dashboard_event_unpublish' org_slug=organization.slug event_id=event.pk %}"
-                          class="d-inline">
-                        {% csrf_token %}
-                        <button class="btn btn-sm btn-warning">Despublicar</button>
-                    </form>
-                {% endif %}
+                <a href="{% url 'dashboard_event_reservas' org_slug=organization.slug event_id=event.pk %}"
+                   class="btn btn-sm btn-outline-secondary">Ver reservas</a>
+                <form method="post"
+                      action="{% url 'dashboard_event_delete' org_slug=organization.slug event_id=event.pk %}"
+                      class="d-inline"
+                      onsubmit="return confirm('\u00bfEliminart este evento y todos sus tickets? Esta acci\u00f3n no se puede deshacer.')">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-danger">Eliminar</button>
+                </form>
             </td>
         </tr>
         {% endfor %}

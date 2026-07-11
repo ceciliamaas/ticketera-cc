@@ -1,0 +1,104 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% block title %}Reservas — {{ event.name }}{% endblock %}
+{% block content %}
+<h2 class="mb-1">Reservas — {{ event.name }}</h2>
+<p class="text-muted mb-4">{{ event.start|date:"d/m/Y H:i" }}{% if event.end %} – {{ event.end|date:"H:i" }}{% endif %}</p>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="fs-2 fw-bold">{{ capacity }}</div>
+                <div class="text-muted small">Capacidad total</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="fs-2 fw-bold">{{ tickets_sold }}</div>
+                <div class="text-muted small">Vendidos</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="fs-2 fw-bold">{{ event.invitations_count }}</div>
+                <div class="text-muted small">Invitaciones</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="fs-2 fw-bold {% if remaining is not None and remaining < 10 %}text-danger{% endif %}">
+                    {% if remaining is None %}∞{% else %}{{ remaining }}{% endif %}
+                </div>
+                <div class="text-muted small">Disponibles</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Órdenes confirmadas</span>
+                <span class="badge bg-secondary">Total recaudado: ${{ total_revenue|intcomma }}</span>
+            </div>
+            {% if orders %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Comprador</th>
+                            <th>Email</th>
+                            <th>Tickets</th>
+                            <th>Total</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>{{ order.first_name }} {{ order.last_name }}</td>
+                            <td>{{ order.email }}</td>
+                            <td>
+                                {% for ot in order.order_tickets.all %}
+                                    <span class="badge bg-light text-dark border">{{ ot.quantity }}× {{ ot.ticket_type.name }}{% if ot.ticket_type.occurrence_date %} <small class="text-muted">{{ ot.ticket_type.occurrence_date|date:"d/m" }}</small>{% endif %}</span>
+                                {% endfor %}
+                            </td>
+                            <td>${{ order.amount|intcomma }}</td>
+                            <td class="text-muted small">{{ order.created_at|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card-body text-muted">No hay órdenes confirmadas todavía.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">Invitaciones</div>
+            <div class="card-body">
+                <p class="text-muted small">Las invitaciones se descuentan del cupo disponible para la venta.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="number" name="invitations_count" class="form-control"
+                               value="{{ event.invitations_count }}" min="0">
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

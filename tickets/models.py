@@ -116,6 +116,11 @@ class TicketType(BaseModel):
         verbose_name="Fecha de la función",
         help_text="Para eventos recurrentes: fecha y hora de esta función específica.",
     )
+    occurrence_end = models.DateTimeField(
+        null=True, blank=True,
+        verbose_name="Fin de la función",
+        help_text="Para eventos recurrentes: hora de finalización de esta función (opcional).",
+    )
     name = models.CharField(max_length=100)
     description = models.TextField(max_length=2000, blank=True)
     color = models.CharField(max_length=6, default='6633ff', blank=True)

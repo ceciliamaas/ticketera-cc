@@ -17,10 +17,13 @@
                 <div class="d-flex justify-content-center ">Paso 1 de 4</div>
                 {% endif %}
                 <h1 class="card-title">Entradas {{ event.name }}</h1>
+                {% if occurrence_date %}
+                  <p class="text-muted mb-2"><i class="fa-regular fa-calendar me-1"></i>Función: <strong>{{ occurrence_date|date:"d/m/Y H:i" }}</strong></p>
+                {% endif %}
                 {% if ticket_data %}
                 <div class="alert alert-info w-100" role="alert">
-                    {% if event.max_tickets_per_order %}Podés comprar hasta <strong>{{ available_tickets }} entradas</strong>.{% endif %}
-                    <!-- Al finalizar la compra, podrás transferir los bonos a otras personas. -->
+                    {% if tickets_remaining < 10 %}¡Solo quedan <strong>{{ tickets_remaining }} entradas</strong> disponibles!{% endif %}
+                    {% if event.max_tickets_per_order and tickets_remaining >= 10 %}Podés comprar hasta <strong>{{ available_tickets }} entradas</strong>.{% endif %}
                 </div>
                     <form method="post"
                           action="{% url 'select_tickets' %}{% if current_event.slug %}?event={{ current_event.slug }}{% endif %}"

@@ -73,6 +73,7 @@ class CheckoutTicketSelectionForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         self.event = kwargs.pop('event', None)
+        self.occurrence_date = kwargs.pop('occurrence_date', None)
         initial_data = kwargs.pop('initial', {})
         super(CheckoutTicketSelectionForm, self).__init__(*args, **kwargs)
 
@@ -89,6 +90,8 @@ class CheckoutTicketSelectionForm(forms.Form):
                           .filter(is_direct_type=False)
                           .filter(do_not_show_in_checkout=False)
                           .order_by('cardinality', 'price'))
+            if self.occurrence_date:
+                ticket_types = ticket_types.filter(occurrence_date=self.occurrence_date)
         else:
             # Fallback to current events if no specific event
             ticket_types = (

@@ -13,8 +13,8 @@ urlpatterns = [
     path('mi-cuenta/', include('user_profile.urls')),
     path('ckeditor5/', include('django_ckeditor_5.urls')),
     path('room_booking/', include('room_booking.urls')),
-    path('', include('tickets.urls')),
     path('dashboard/', include('organizations.urls')),
+    path('', include('tickets.urls')),
 
     # Clean public-facing URLs — defined LAST so they win name resolution
     path('mis-entradas/proximos-eventos/', my_ticket_view, name='my_ticket'),

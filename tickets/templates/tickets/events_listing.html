@@ -16,17 +16,19 @@
                         <div class="col-lg-6 col-md-6 col-sm-12 mb-5">
                             <div class="card shadow-sm event-card">
                                 <!-- Image at full width -->
-                                {% if event.header_image %}
-                                    <img src="{{ event.header_image.url }}" 
+                                {% with hero=event.header_image|default:event.organization.photo %}
+                                {% if hero %}
+                                    <img src="{{ hero.url }}" 
                                          class="card-img-top" 
                                          alt="{{ event.name }}"
                                          style="height: 150px; object-fit: contain; background-color: #f8f9fa;">
                                 {% else %}
-                                    <div class="card-img-top bg-primary d-flex align-items-center justify-content-center" 
+                                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
                                          style="height: 150px;">
-                                        <i class="fas fa-calendar-alt text-white" style="font-size: 3rem;"></i>
+                                        <span class="text-muted">{{ event.name }}</span>
                                     </div>
                                 {% endif %}
+                                {% endwith %}
                                 
                                 <!-- Content below image -->
                                 <div class="card-body">
@@ -45,7 +47,7 @@
                                                     <div class="d-flex align-items-center">
                                                         <i class="fas fa-calendar-alt text-primary me-2"></i>
                                                         <span class="text-muted">
-                                                            {{ event.start|date:"d/m/Y H:i" }}
+                                                            {{ event.start|date:"d/m/Y H:i" }}{% if event.end %} &ndash; {{ event.end|date:"H:i" }}{% endif %}
                                                         </span>
                                                     </div>
                                                 </div>

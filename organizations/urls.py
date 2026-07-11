@@ -6,6 +6,9 @@ urlpatterns = [
     path('o/<slug:org_slug>/', views.dashboard_event_list, name='dashboard_event_list'),
     path('o/<slug:org_slug>/events/new/', views.dashboard_event_create, name='dashboard_event_create'),
     path('o/<slug:org_slug>/events/<int:event_id>/edit/', views.dashboard_event_edit, name='dashboard_event_edit'),
+    path('o/<slug:org_slug>/events/<int:event_id>/reservas/', views.dashboard_event_reservas, name='dashboard_event_reservas'),
+    path('o/<slug:org_slug>/events/<int:event_id>/delete/', views.dashboard_event_delete, name='dashboard_event_delete'),
+    path('o/<slug:org_slug>/events/<int:event_id>/set-status/', views.dashboard_event_set_status, name='dashboard_event_set_status'),
     path('o/<slug:org_slug>/events/<int:event_id>/publish/', views.dashboard_event_publish, name='dashboard_event_publish'),
     path('o/<slug:org_slug>/events/<int:event_id>/unpublish/', views.dashboard_event_unpublish, name='dashboard_event_unpublish'),
     path('o/<slug:org_slug>/members/', views.dashboard_members, name='dashboard_members'),
@@ -16,4 +19,6 @@ urlpatterns = [
     path('o/<slug:org_slug>/mercadopago/connect/', views.dashboard_mp_oauth_start, name='dashboard_mp_oauth_start'),
     path('o/<slug:org_slug>/mercadopago/disconnect/', views.dashboard_mp_disconnect, name='dashboard_mp_disconnect'),
     path('mp/callback/', views.dashboard_mp_callback, name='dashboard_mp_callback'),
+    # Organisation settings
+    path('o/<slug:org_slug>/settings/', views.dashboard_org_edit, name='dashboard_org_edit'),
 ]

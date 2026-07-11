@@ -1,10 +1,7 @@
 {% extends "dashboard/base.html" %}
 {% block title %}Miembros — {{ organization.name }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Miembros de {{ organization.name }}</h2>
-    <a href="{% url 'dashboard_event_list' org_slug=organization.slug %}" class="btn btn-outline-secondary">← Eventos</a>
-</div>
+<h2 class="mb-3">Miembros de {{ organization.name }}</h2>
 
 <div class="card mb-4">
     <div class="card-header">Agregar miembro</div>

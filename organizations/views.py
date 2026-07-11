@@ -11,8 +11,9 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from django.utils.text import slugify
 from events.models import Event
-from .forms import EventForm
+from .forms import EventForm, OrganizationForm, TicketTypeFormSet
 from .models import Organization, OrganizationMembership
 from .permissions import get_authorized_organization, user_can_edit_event
 
@@ -48,15 +49,85 @@ def dashboard_event_create(request, org_slug):
         if form.is_valid():
             event = form.save(commit=False)
             event.organization = organization
+            if not event.slug:
+                event.slug = slugify(event.name)
+            if event.max_tickets_per_order is None:
+                event.max_tickets_per_order = 5
+            # Ensure slug is unique within the organization
+            base_slug = event.slug
+            counter = 1
+            qs = Event.objects.filter(organization=organization, slug=event.slug)
+            if event.pk:
+                qs = qs.exclude(pk=event.pk)
+            while qs.exists():
+                event.slug = f'{base_slug}-{counter}'
+                counter += 1
+                qs = Event.objects.filter(organization=organization, slug=event.slug)
+                if event.pk:
+                    qs = qs.exclude(pk=event.pk)
             event.save()
-            messages.success(request, f'Event "{event.name}" created.')
-            return redirect('dashboard_event_list', org_slug=org_slug)
+            formset = TicketTypeFormSet(request.POST, instance=event)
+            if formset.is_valid():
+                formset.save()
+            messages.success(request, f'Evento "{event.name}" creado.')
+            return redirect('dashboard_event_edit', org_slug=org_slug, event_id=event.pk)
     else:
-        form = EventForm()
+        form = EventForm(initial={
+            'location': organization.location,
+            'location_url': organization.location_url,
+        })
+        formset = TicketTypeFormSet()
     return render(request, 'dashboard/event_form.html', {
         'organization': organization,
         'form': form,
-        'action': 'Create',
+        'formset': formset,
+        'action': 'Crear',
+    })
+
+
+@login_required
+def dashboard_event_reservas(request, org_slug, event_id):
+    from django.db.models import Sum, Count
+    from tickets.models import Order, OrderTicket
+    organization = get_authorized_organization(request.user, org_slug, min_role='admin')
+    event = get_object_or_404(Event, pk=event_id, organization=organization)
+
+    if request.method == 'POST':
+        try:
+            invitations = int(request.POST.get('invitations_count', 0))
+            event.invitations_count = max(0, invitations)
+            event.save(update_fields=['invitations_count'])
+            messages.success(request, 'Invitaciones actualizadas.')
+        except ValueError:
+            messages.error(request, 'Número de invitaciones inválido.')
+        return redirect('dashboard_event_reservas', org_slug=org_slug, event_id=event_id)
+
+    orders = (
+        Order.objects.filter(event=event, status=Order.OrderStatus.CONFIRMED)
+        .select_related('user')
+        .prefetch_related('order_tickets__ticket_type')
+        .order_by('-created_at')
+    )
+
+    tickets_sold = (
+        OrderTicket.objects.filter(
+            order__event=event,
+            order__status=Order.OrderStatus.CONFIRMED,
+            ticket_type__ignore_max_amount=False,
+        ).aggregate(total=Sum('quantity'))['total'] or 0
+    )
+    total_revenue = orders.aggregate(total=Sum('amount'))['total'] or 0
+    capacity = event.max_tickets or '∞'
+    remaining = event.tickets_remaining() if event.max_tickets else None
+
+    return render(request, 'dashboard/event_reservas.html', {
+        'organization': organization,
+        'event': event,
+        'orders': orders,
+        'tickets_sold': tickets_sold,
+        'total_revenue': total_revenue,
+        'capacity': capacity,
+        'remaining': remaining,
     })
 
 
@@ -66,18 +137,58 @@ def dashboard_event_edit(request, org_slug, event_id):
     event = get_object_or_404(Event, pk=event_id, organization=organization)
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES, instance=event)
-        if form.is_valid():
+        formset = TicketTypeFormSet(request.POST, instance=event)
+        if form.is_valid() and formset.is_valid():
             form.save()
-            messages.success(request, f'Event "{event.name}" updated.')
-            return redirect('dashboard_event_list', org_slug=org_slug)
+            formset.save()
+            messages.success(request, f'Evento "{event.name}" guardado.')
+            return redirect('dashboard_event_edit', org_slug=org_slug, event_id=event.pk)
     else:
         form = EventForm(instance=event)
+        formset = TicketTypeFormSet(instance=event)
     return render(request, 'dashboard/event_form.html', {
         'organization': organization,
         'event': event,
         'form': form,
-        'action': 'Edit',
+        'formset': formset,
+        'action': 'Editar',
     })
+
+
+@login_required
+@require_POST
+def dashboard_event_delete(request, org_slug, event_id):
+    organization = get_authorized_organization(request.user, org_slug, min_role='admin')
+    event = get_object_or_404(Event, pk=event_id, organization=organization)
+    from tickets.models import Order
+    order_count = Order.objects.filter(event=event).count()
+    if order_count > 0:
+        messages.error(
+            request,
+            f'No se puede eliminar "{event.name}" porque tiene {order_count} orden(es) asociada(s). '
+            f'Solo se pueden eliminar eventos sin órdenes.'
+        )
+        return redirect('dashboard_event_list', org_slug=org_slug)
+    event.delete()
+    messages.success(request, f'Evento "{event.name}" eliminado.')
+    return redirect('dashboard_event_list', org_slug=org_slug)
+
+
+@login_required
+@require_POST
+def dashboard_event_set_status(request, org_slug, event_id):
+    organization = get_authorized_organization(request.user, org_slug, min_role='admin')
+    event = get_object_or_404(Event, pk=event_id, organization=organization)
+    new_status = request.POST.get('status')
+    if new_status == Event.Status.PUBLISHED:
+        if not organization.mp_connected:
+            messages.error(request, 'Debes conectar una cuenta de MercadoPago antes de publicar eventos.')
+            return redirect('dashboard_mp_connect', org_slug=org_slug)
+        event.status = Event.Status.PUBLISHED
+    else:
+        event.status = Event.Status.DRAFT
+    event.save(update_fields=['status'])
+    return redirect('dashboard_event_list', org_slug=org_slug)
 
 
 @login_required
@@ -154,6 +265,23 @@ def dashboard_member_remove(request, org_slug, membership_id):
     membership.delete()
     messages.success(request, f'{email} removed from organization.')
     return redirect('dashboard_members', org_slug=org_slug)
+
+
+# ── Organisation settings ────────────────────────────────────────────────────
+
+@login_required
+def dashboard_org_edit(request, org_slug):
+    """Let org admins edit their organisation's basic details."""
+    organization = get_authorized_organization(request.user, org_slug, min_role='admin')
+    if request.method == 'POST':
+        form = OrganizationForm(request.POST, request.FILES, instance=organization)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Datos de la organización actualizados.')
+            return redirect('dashboard_org_edit', org_slug=organization.slug)
+    else:
+        form = OrganizationForm(instance=organization)
+    return render(request, 'dashboard/org_edit.html', {'organization': organization, 'form': form})
 
 
 # ── MercadoPago Marketplace OAuth ─────────────────────────────────────────────

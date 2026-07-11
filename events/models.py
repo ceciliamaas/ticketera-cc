@@ -53,6 +53,10 @@ class Event(BaseModel):
     )
     max_tickets = models.IntegerField(blank=True, null=True)
     max_tickets_per_order = models.IntegerField(default=5)
+    invitations_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Entradas reservadas como invitaciones. Se descuentan del cupo disponible para la venta.",
+    )
     transfers_enabled_until = models.DateTimeField(null=True, blank=True)
     volunteers_enabled_until = models.DateTimeField(blank=True, null=True)
     send_transfer_notifications = models.BooleanField(default=False, help_text="If checked, transfer notification emails will be sent for this event")
@@ -127,7 +131,7 @@ class Event(BaseModel):
                 ).aggregate(total=Sum('quantity'))['total']
                 or 0
             )
-            return self.max_tickets - tickets_sold
+            return self.max_tickets - tickets_sold - self.invitations_count
         else:
             return 999999999  # extra high number (easy hack)
 

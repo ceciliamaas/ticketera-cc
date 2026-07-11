@@ -22,16 +22,18 @@
 
     <!-- TODO move this shit to some other place  -->
     <style>
+        {% with hero=event.header_image|default:event.organization.photo %}
         .site-header {
-            background: url("{{event.header_image.url}}") no-repeat center center;
+            {% if hero %}background: url("{{ hero.url }}") no-repeat center center;{% endif %}
             height: 200px;
         }
 
         @media only screen and (min-width: 601px) {
             .site-header.hero {
-                height: {{event.header_image.height}}px !important;
+                height: {% if event.header_image %}{{event.header_image.height}}{% elif event.organization.photo %}{{event.organization.photo.height}}{% else %}200{% endif %}px !important;
             }
         }
+        {% endwith %}
 
         @media (max-width: 996px) {
             .navbarNav {
