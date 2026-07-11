@@ -330,8 +330,14 @@ def order_summary(request, event_slug=None):
             return redirect(reverse("checkout_payment_callback", kwargs={'order_key': order.key}))
 
         sdk = mercadopago.SDK(event.organization.mp_access_token)
-        preference_data['marketplace_fee'] = event.organization.mp_marketplace_fee_for(total_amount)
+        fee = event.organization.mp_marketplace_fee_for(total_amount)
+        if fee:
+            preference_data['marketplace_fee'] = fee
         response = sdk.preference().create(preference_data)['response']
+        if 'id' not in response:
+            import logging
+            logging.error('MP preference creation failed: %s', response)
+            return HttpResponse(f'Error al crear preferencia de pago: {response}', status=500)
 
         order.response = response
         order.save()
