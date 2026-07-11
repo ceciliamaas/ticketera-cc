@@ -257,12 +257,13 @@ def order_summary(request, event_slug=None):
             return HttpResponse('No hay suficientes tickets disponibles.', status=400)
 
         with transaction.atomic():
+            _profile = getattr(request.user, 'profile', None)
             order = Order(
-                first_name=request.user.first_name,
-                last_name=request.user.last_name,
+                first_name=request.user.first_name or '',
+                last_name=request.user.last_name or '',
                 email=request.user.email,
-                phone=request.user.profile.phone,
-                dni=request.user.profile.document_number,
+                phone=getattr(_profile, 'phone', '') or '',
+                dni=getattr(_profile, 'document_number', '') or '',
                 amount=total_amount,
                 status=Order.OrderStatus.PENDING,
                 event=event,
