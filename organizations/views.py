@@ -52,7 +52,7 @@ def dashboard_event_create(request, org_slug):
             if not event.slug:
                 event.slug = slugify(event.name)
             if event.max_tickets_per_order is None:
-                event.max_tickets_per_order = 5
+                event.max_tickets_per_order = 0
             # Ensure slug is unique within the organization
             base_slug = event.slug
             counter = 1

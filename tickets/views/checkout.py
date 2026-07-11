@@ -61,8 +61,7 @@ def select_tickets(request, event_slug=None):
             return redirect('order_summary')
         else:
             tickets_remaining = event.tickets_remaining() or 0
-            available_tickets = event.max_tickets_per_order
-            available_tickets = min(available_tickets, tickets_remaining)
+            available_tickets = min(event.max_tickets_per_order, tickets_remaining) if event.max_tickets_per_order else tickets_remaining
             context = {
                 'form': form,
                 'ticket_data': form.ticket_data,
@@ -76,8 +75,7 @@ def select_tickets(request, event_slug=None):
             return render(request, 'checkout/select_tickets.html', context)
 
     tickets_remaining = event.tickets_remaining() or 0
-    available_tickets = event.max_tickets_per_order
-    available_tickets = min(available_tickets, tickets_remaining)
+    available_tickets = min(event.max_tickets_per_order, tickets_remaining) if event.max_tickets_per_order else tickets_remaining
 
     initial_data = request.session.get('ticket_selection', {})
 
@@ -175,7 +173,7 @@ def order_summary(request, event_slug=None):
         # For free tickets (price = 0), use custom amount
         if price == 0:
             custom_amount_field = f'ticket_{ticket_type.id}_custom_amount'
-            custom_amount = ticket_selection.get(custom_amount_field, 0)
+            custom_amount = float(ticket_selection.get(custom_amount_field) or 0)
             subtotal = custom_amount * quantity
             effective_price = custom_amount
         else:
@@ -244,7 +242,7 @@ def order_summary(request, event_slug=None):
         total_quantity = sum(item['quantity'] for item in ticket_data)
         remaining_event_tickets = event.tickets_remaining()
 
-        if total_quantity > event.max_tickets_per_order:
+        if event.max_tickets_per_order and total_quantity > event.max_tickets_per_order:
             return HttpResponse('Superaste la cantidad máxima de tickets permitida.', status=401)
 
         # Check if any ticket type ignores max amount

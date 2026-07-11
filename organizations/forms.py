@@ -62,7 +62,6 @@ class EventForm(forms.ModelForm):
         self.fields['end'].required = False
         self.fields['max_tickets'].required = True
         self.fields['max_tickets_per_order'].required = False
-        self.fields['max_tickets_per_order'].initial = 5
         for field_name in ('start', 'end'):
             self.fields[field_name].input_formats = ['%Y-%m-%dT%H:%M']
         # Translate status choices
