@@ -139,7 +139,20 @@ def dashboard_event_edit(request, org_slug, event_id):
         form = EventForm(request.POST, request.FILES, instance=event)
         formset = TicketTypeFormSet(request.POST, instance=event)
         if form.is_valid() and formset.is_valid():
-            form.save()
+            event = form.save(commit=False)
+            if event.max_tickets_per_order is None:
+                event.max_tickets_per_order = 0
+            if not event.slug:
+                event.slug = slugify(event.name)
+            # Ensure slug uniqueness within the org
+            base_slug = event.slug
+            counter = 1
+            qs = Event.objects.filter(organization=organization, slug=event.slug).exclude(pk=event.pk)
+            while qs.exists():
+                event.slug = f'{base_slug}-{counter}'
+                counter += 1
+                qs = Event.objects.filter(organization=organization, slug=event.slug).exclude(pk=event.pk)
+            event.save()
             formset.save()
             messages.success(request, f'Evento "{event.name}" guardado.')
             return redirect('dashboard_event_edit', org_slug=org_slug, event_id=event.pk)

@@ -322,10 +322,10 @@ def order_summary(request, event_slug=None):
             "external_reference": str(order.key),
         }
 
-        # Free order: confirm immediately, skip MercadoPago
+        # Free order: confirm and mint tickets immediately, skip MercadoPago
         if total_amount == 0:
-            order.status = Order.OrderStatus.CONFIRMED
-            order.save(update_fields=['status'])
+            from tickets.processing import mint_tickets
+            mint_tickets(order)
             return redirect(reverse("checkout_payment_callback", kwargs={'order_key': order.key}))
 
         sdk = mercadopago.SDK(event.organization.mp_access_token)
