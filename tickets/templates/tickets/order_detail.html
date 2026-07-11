@@ -1,22 +1,11 @@
 {% extends 'tickets/base.html' %}
 {% load bootstrap5 %}
+{% load static %}
 
 {% block extrahead %}
 {% if order.amount > 0 %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://sdk.mercadopago.com/js/v2"></script>
-    <script>
-        $(document).ready(function() {
-          const mp = new MercadoPago('{{ MERCADOPAGO_PUBLIC_KEY }}', { locale: 'es-AR' });
-          mp.checkout({
-            preference: { id: '{{ preference_id }}' },
-            render: {
-              container: '.cho-container', // Indicates the name of the class where the payment button will be displayed
-              label: 'Pagar', // Changes the button label (optional)
-            }
-          });
-        });
-    </script>
+    <script src="{% static 'tickets/js/mp_checkout.js' %}"></script>
 {% endif %}
 
 {% endblock %}
@@ -93,7 +82,7 @@
 {% endif %}
 
 {% if order.status == 'PENDING' %}
-    <div class="cho-container my-5 w-100">
+    <div class="cho-container my-5 w-100" data-mp-public-key="{{ MERCADOPAGO_PUBLIC_KEY }}" data-mp-preference-id="{{ preference_id }}">
         {% if order.amount == 0 %}
         <button class="mercadopago-button" onclick="window.location.href='{% url "free_order_confirmation" order_key=order.key %}'">Confirmar</button>
         {% endif %}
