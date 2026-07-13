@@ -77,20 +77,35 @@ def public_ticket_detail(request, ticket_key, event_slug=None):
             current_event = Event.get_by_slug(event_slug)
         else:
             current_event = Event.get_main_event()
-        
+
         is_valid = (
             not ticket.is_used and
             ticket.event.active
         )
-        
+
+        # Count tickets in the same order and compute this ticket's position
+        from tickets.models import NewTicket as NT
+        order_total = NT.objects.filter(order=ticket.order).count()
+        ticket_position = NT.objects.filter(order=ticket.order, id__lte=ticket.id).count()
+        holder_name = ''
+        if ticket.holder:
+            holder_name = ticket.holder.get_full_name().strip() or ticket.holder.email
+        if not holder_name:
+            holder_name = f"{ticket.order.first_name} {ticket.order.last_name}".strip()
+        if order_total > 1:
+            display_name = f"{holder_name} {ticket_position}" if holder_name else str(ticket_position)
+        else:
+            display_name = holder_name
+
         # Get ticket DTO for QR code
         ticket_dto = ticket.get_dto(user=None)
-        
+
         context = {
             'ticket': ticket,
-            'ticket_dto': ticket_dto,  # Add DTO for QR code
+            'ticket_dto': ticket_dto,
             'event': ticket.event,
             'is_valid': is_valid,
+            'display_name': display_name,
         }
         return render(request, 'mi_fuego/tickets/public_ticket.html', context)
     except NewTicket.DoesNotExist:

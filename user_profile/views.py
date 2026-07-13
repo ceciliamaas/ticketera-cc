@@ -242,6 +242,14 @@ def my_ticket_view(request, event_slug=None):
             ).first()
             
             # Organize tickets for this event
+            # Pre-compute how many tickets each order has so we can number them.
+            all_tickets = list(all_tickets)
+            order_totals: dict = {}
+            for t in all_tickets:
+                oid = str(t.order.id)
+                order_totals[oid] = order_totals.get(oid, 0) + 1
+            order_counters: dict = {}
+
             tickets_dto = []
             all_unassigned = True
             for ticket in all_tickets:
@@ -357,9 +365,22 @@ def my_ticket_view(request, event_slug=None):
                     ticket_dto['restriccion_display'] = None
                     ticket_dto['grupo_id'] = None
                     ticket_dto['grupo_miembro_id'] = None
-                
+
+                # Compute display_name: "Nombre N" when order has multiple tickets
+                oid = str(ticket.order.id)
+                order_counters[oid] = order_counters.get(oid, 0) + 1
+                holder_name = ''
+                if ticket.holder:
+                    holder_name = ticket.holder.get_full_name().strip() or ticket.holder.email
+                if not holder_name and ticket.order:
+                    holder_name = f"{ticket.order.first_name} {ticket.order.last_name}".strip()
+                if order_totals.get(oid, 1) > 1:
+                    ticket_dto['display_name'] = f"{holder_name} {order_counters[oid]}" if holder_name else str(order_counters[oid])
+                else:
+                    ticket_dto['display_name'] = holder_name
+
                 tickets_dto.append(ticket_dto)
-            
+
             # Count unshared tickets (Guest tickets that are not transferred and not pending)
             unshared_tickets_count = 0
             has_owner_tickets = False
@@ -420,23 +441,63 @@ def my_ticket_view(request, event_slug=None):
             # If event doesn't exist, redirect to main event
             return redirect('my_ticket')
     
-    # If no event_slug: show all upcoming event tickets grouped by event
+    # If no event_slug: show all events the user has tickets for (upcoming + past + cancelled)
     from django.utils import timezone as tz
-    upcoming_events = Event.get_active_events().filter(
-        newticket__holder=request.user
+    all_user_events = Event.objects.filter(
+        active=True,
+        newticket__holder=request.user,
     ).filter(
-        models.Q(start__gte=tz.now()) | models.Q(start__isnull=True)
+        models.Q(organization__isnull=True) | models.Q(organization__is_active=True)
     ).distinct().order_by('start')
 
     tickets_by_event = {}
-    for ev in upcoming_events:
-        tickets = NewTicket.objects.filter(holder=request.user, event=ev).order_by('owner')
-        tickets_by_event[ev] = [t.get_dto(user=request.user) for t in tickets]
+    for ev in all_user_events:
+        raw_tickets = list(NewTicket.objects.filter(holder=request.user, event=ev).order_by('owner'))
+        # Pre-count tickets per order to build numbered display names
+        order_totals: dict = {}
+        for t in raw_tickets:
+            oid = str(t.order.id)
+            order_totals[oid] = order_totals.get(oid, 0) + 1
+        order_counters: dict = {}
+        from django.utils import timezone as _tz
+        now = _tz.now()
+        dtos = []
+        for t in raw_tickets:
+            dto = t.get_dto(user=request.user)
+            oid = str(t.order.id)
+            order_counters[oid] = order_counters.get(oid, 0) + 1
+            holder_name = (t.holder.get_full_name().strip() if t.holder else '') or \
+                          f"{t.order.first_name} {t.order.last_name}".strip()
+            if order_totals.get(oid, 1) > 1:
+                dto['display_name'] = f"{holder_name} {order_counters[oid]}" if holder_name else str(order_counters[oid])
+            else:
+                dto['display_name'] = holder_name
+            # Compute display state
+            if ev.status == 'cancelled':
+                dto['display_state'] = 'cancelled'
+            elif t.is_used or (ev.end and ev.end < now) or (not ev.end and ev.start and ev.start < now):
+                dto['display_state'] = 'used'
+            else:
+                dto['display_state'] = 'valid'
+            dtos.append(dto)
+        tickets_by_event[ev] = dtos
 
     has_available_tickets = TicketType.objects.get_available_ticket_types_for_current_events().exists()
 
+    # Split into active (valid/upcoming) and inactive (past/cancelled), preserving start-date order
+    active_event_tickets = []
+    inactive_event_tickets = []
+    for ev, dtos in tickets_by_event.items():
+        is_past = (ev.end and ev.end < now) or (not ev.end and ev.start and ev.start < now)
+        if ev.status == 'cancelled' or is_past:
+            inactive_event_tickets.append((ev, dtos))
+        else:
+            active_event_tickets.append((ev, dtos))
+
     return render(request, 'mi_fuego/my_tickets/my_ticket.html', {
-        'tickets_by_event': tickets_by_event,
+        'tickets_by_event': {},  # sentinel to activate the multi-event template branch
+        'active_event_tickets': active_event_tickets,
+        'inactive_event_tickets': inactive_event_tickets,
         'has_available_tickets': has_available_tickets,
         'nav_primary': 'tickets',
         'now': tz.now(),
@@ -495,6 +556,24 @@ def my_ticket_view(request, event_slug=None):
 
 
 @login_required
+def delete_my_tickets_for_event(request, event_slug):
+    """Delete all held tickets for a past or cancelled event from the user's view."""
+    if request.method != 'POST':
+        return redirect('my_ticket')
+    from django.utils import timezone as _tz
+    from tickets.models import NewTicket
+    event = get_object_or_404(Event, slug=event_slug, active=True)
+    now = _tz.now()
+    is_past = (event.end and event.end < now) or (not event.end and event.start and event.start < now)
+    if not (event.status == 'cancelled' or is_past):
+        messages.error(request, 'Solo podés eliminar entradas de eventos pasados o cancelados.')
+        return redirect('my_ticket')
+    NewTicket.objects.filter(holder=request.user, event=event).delete()
+    messages.success(request, f'Entradas del evento "{event.name}" eliminadas de tu historial.')
+    return redirect('my_ticket')
+
+
+@login_required
 def transferable_tickets_view(request, event_slug=None):
     # Get the specific event from slug
     if event_slug:
@@ -530,6 +609,7 @@ def transferable_tickets_view(request, event_slug=None):
             'start': ticket.event.start,
             'end': ticket.event.end,
         }
+        ticket_dto['order_id'] = str(ticket.order.id)
         tickets_dto.append(ticket_dto)
 
     transferred_tickets = NewTicketTransfer.objects.filter(

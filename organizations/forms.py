@@ -62,6 +62,9 @@ class EventForm(forms.ModelForm):
         self.fields['end'].required = False
         self.fields['max_tickets'].required = True
         self.fields['max_tickets_per_order'].required = False
+        self.fields['max_tickets_per_order'].widget.attrs['placeholder'] = ''
+        if not kwargs.get('instance'):
+            self.initial['max_tickets_per_order'] = ''
         for field_name in ('start', 'end'):
             self.fields[field_name].input_formats = ['%Y-%m-%dT%H:%M']
         # Translate status choices

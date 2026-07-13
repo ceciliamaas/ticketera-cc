@@ -1,6 +1,5 @@
 import uuid
 
-import mercadopago
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -46,6 +45,13 @@ def select_tickets(request, event_slug=None):
     
     # Store event in session for checkout flow
     store_event_in_session(request, event)
+
+    if event.reservations_closed:
+        return render(request, 'checkout/select_tickets.html', {
+            'reservations_closed': True,
+            'event': event,
+            'current_event': event,
+        })
     
     if request.method == 'POST':
         occ_ts = request.session.get('occ_ts')
@@ -168,8 +174,8 @@ def order_summary(request, event_slug=None):
     for ticket_type in ticket_types:
         field_name = f'ticket_{ticket_type.id}_quantity'
         quantity = ticket_selection.get(field_name, 0)
-        price = ticket_type.price
-        
+        price = ticket_type.price or 0
+
         # For free tickets (price = 0), use custom amount
         if price == 0:
             custom_amount_field = f'ticket_{ticket_type.id}_custom_amount'
@@ -303,52 +309,10 @@ def order_summary(request, event_slug=None):
                         defaults={'order': acceptance.order}
                     )
 
-        preference_data = {
-            "items": items,
-            "payer": {
-                "name": order.first_name,
-                "surname": order.last_name,
-                "email": order.email,
-                "phone": {"number": order.phone},
-                "identification": {"type": "DNI", "number": order.dni},
-            },
-            "back_urls": {
-                "success": settings.APP_URL.rstrip('/') + reverse("checkout_payment_callback", kwargs={'order_key': order.key}),
-                "failure": settings.APP_URL.rstrip('/') + reverse("order_summary"),
-                "pending": settings.APP_URL.rstrip('/') + reverse("checkout_payment_callback", kwargs={'order_key': order.key}),
-            },
-            "auto_return": "approved",
-            "notification_url": settings.APP_URL.rstrip('/') + reverse("mercadopago_webhook"),
-            "statement_descriptor": event.name,
-            "external_reference": str(order.key),
-        }
-
-        # Free order: confirm and mint tickets immediately, skip MercadoPago
-        if total_amount == 0:
-            from tickets.processing import mint_tickets
-            mint_tickets(order)
-            return redirect(reverse("checkout_payment_callback", kwargs={'order_key': order.key}))
-
-        sdk = mercadopago.SDK(event.organization.mp_access_token)
-        fee = event.organization.mp_marketplace_fee_for(total_amount)
-        if fee:
-            preference_data['marketplace_fee'] = fee
-        response = sdk.preference().create(preference_data)['response']
-        if 'id' not in response:
-            import logging
-            logging.error('MP preference creation failed: %s', response)
-            return HttpResponse(f'Error al crear preferencia de pago: {response}', status=500)
-
-        order.response = response
-        order.save()
-
-        # Use sandbox checkout when in test mode or when token is a test token
-        is_test = (
-            str(event.organization.mp_access_token).startswith('TEST-')
-            or settings.MERCADOPAGO.get('TEST_MODE', False)
-        )
-        checkout_url = response.get('sandbox_init_point') if is_test else response.get('init_point')
-        return HttpResponseRedirect(checkout_url)
+        # Confirm immediately — no payment gateway
+        from tickets.processing import mint_tickets
+        mint_tickets(order)
+        return redirect(reverse('checkout_payment_callback', kwargs={'order_key': order.key}))
 
     return render(request, 'checkout/order_summary.html', {
         'ticket_data': ticket_data,

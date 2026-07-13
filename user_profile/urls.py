@@ -36,6 +36,7 @@ from .views import (
     mis_grupos_view,
     grupo_manage_view,
     grupo_toggle_ajax,
+    delete_my_tickets_for_event,
 )
 
 urlpatterns = [
@@ -80,6 +81,7 @@ urlpatterns = [
     path("mis-bonos/<slug:event_slug>/grupos/<int:grupo_id>/", grupo_manage_view, name="grupo_manage"),
     path("mis-bonos/<slug:event_slug>/grupos/<int:grupo_id>/ajax/", grupo_toggle_ajax, name="grupo_toggle_ajax"),
     path("mis-bonos/<slug:event_slug>/bonos-transferibles/", transferable_tickets_view, name="transferable_tickets"),
+    path("mis-bonos/<slug:event_slug>/eliminar-mis-entradas/", delete_my_tickets_for_event, name="delete_my_tickets_for_event"),
     path("mis-bonos/<slug:event_slug>/", my_ticket_view, name="my_ticket_event"),
     path("mis-bonos/<slug:event_slug>/ajax/", my_tickets_ajax, name="my_tickets_ajax"),
 

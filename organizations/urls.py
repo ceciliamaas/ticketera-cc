@@ -8,6 +8,7 @@ urlpatterns = [
     path('o/<slug:org_slug>/events/<int:event_id>/edit/', views.dashboard_event_edit, name='dashboard_event_edit'),
     path('o/<slug:org_slug>/events/<int:event_id>/reservas/', views.dashboard_event_reservas, name='dashboard_event_reservas'),
     path('o/<slug:org_slug>/events/<int:event_id>/delete/', views.dashboard_event_delete, name='dashboard_event_delete'),
+    path('o/<slug:org_slug>/events/<int:event_id>/cancel/', views.dashboard_event_cancel, name='dashboard_event_cancel'),
     path('o/<slug:org_slug>/events/<int:event_id>/set-status/', views.dashboard_event_set_status, name='dashboard_event_set_status'),
     path('o/<slug:org_slug>/events/<int:event_id>/publish/', views.dashboard_event_publish, name='dashboard_event_publish'),
     path('o/<slug:org_slug>/events/<int:event_id>/unpublish/', views.dashboard_event_unpublish, name='dashboard_event_unpublish'),

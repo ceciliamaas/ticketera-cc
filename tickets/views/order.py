@@ -90,9 +90,16 @@ def order_detail(request, order_key):
         logging.info('getting payment preferences')
         payment_preference_id = order.get_payment_preference()['id'] if order.status == Order.OrderStatus.PENDING else None
 
+        org = order.ticket_type.event.organization if order.ticket_type and order.ticket_type.event and order.ticket_type.event.organization else None
+        mp_public_key = (
+            org.mp_public_key
+            if org and org.mp_connected and org.mp_public_key
+            else settings.MERCADOPAGO['PUBLIC_KEY']
+        )
+
         context.update({
             'preference_id': payment_preference_id,
-            'MERCADOPAGO_PUBLIC_KEY': settings.MERCADOPAGO['PUBLIC_KEY'],
+            'MERCADOPAGO_PUBLIC_KEY': mp_public_key,
         })
     logging.info('got payment preferences')
 
@@ -121,10 +128,10 @@ def payment_success(request, order_key):
     order.save(update_fields=['response'])
     return HttpResponseRedirect(order.get_resource_url())
 
-def payment_failure(request):
+def payment_failure(request, order_key):
     return HttpResponse('PAYMENT FAILURE')
 
-def payment_pending(request):
+def payment_pending(request, order_key):
     return HttpResponse('PAYMENT PENDING')
 
 @csrf_exempt
@@ -199,7 +206,9 @@ def checkout_payment_callback(request, order_key):
         mp_status = request.GET.get('status') or request.GET.get('collection_status')
         if payment_id and mp_status == 'approved':
             try:
-                sdk = mercadopago.SDK(settings.MERCADOPAGO['ACCESS_TOKEN'])
+                _org = order.event.organization if order.event and order.event.organization else None
+                _mp_token = (_org.mp_access_token if _org and _org.mp_access_token else None) or settings.MERCADOPAGO['ACCESS_TOKEN']
+                sdk = mercadopago.SDK(_mp_token)
                 payment = sdk.payment().get(payment_id)['response']
                 if (
                     payment.get('status') == 'approved'

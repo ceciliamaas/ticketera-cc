@@ -1,7 +1,16 @@
 {% extends "./base.html" %}
 {% load humanize %}
 {% block truecontent %}
-    {% if tickets_remaining <= 0 %}
+    {% if reservations_closed %}
+        <div class="truecontent">
+            <div class="card text-center mx-extra">
+                <div class="card-body d-flex justify-content-between flex-column align-items-center main-card-spacing gap-4">
+                    <h3>Ventas cerradas</h3>
+                    <div>Las ventas para este evento han sido cerradas por el organizador.</div>
+                </div>
+            </div>
+        </div>
+    {% elif tickets_remaining <= 0 %}
         <div class="truecontent">
             <div class="card text-center mx-extra">
                 <div class="card-body d-flex justify-content-between flex-column align-items-center main-card-spacing gap-4">
@@ -21,10 +30,11 @@
                   <p class="text-muted mb-2"><i class="fa-regular fa-calendar me-1"></i>Función: <strong>{{ occurrence_date|date:"d/m/Y H:i" }}</strong></p>
                 {% endif %}
                 {% if ticket_data %}
+                {% if tickets_remaining <= 5 %}
                 <div class="alert alert-info w-100" role="alert">
-                    {% if tickets_remaining < 10 %}¡Solo quedan <strong>{{ tickets_remaining }} entradas</strong> disponibles!{% endif %}
-                    {% if event.max_tickets_per_order and tickets_remaining >= 10 %}Podés comprar hasta <strong>{{ available_tickets }} entradas</strong>.{% endif %}
+                    ¡Solo quedan <strong>{{ tickets_remaining }} entradas</strong> disponibles!
                 </div>
+                {% endif %}
                     <form method="post"
                           action="{% url 'select_tickets' %}{% if current_event.slug %}?event={{ current_event.slug }}{% endif %}"
                           class="w-100 d-flex flex-column">

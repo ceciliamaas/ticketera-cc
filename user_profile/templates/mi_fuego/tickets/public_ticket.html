@@ -285,6 +285,9 @@
                                 </div>
                                 <div class="qr-container my-3 my-md-0 mx-auto">
                                     <div class="qr d-flex flex-column align-items-center">
+                                        {% if display_name %}
+                                        <div class="text-center mb-2 fw-bold fs-5">{{ display_name }}</div>
+                                        {% endif %}
                                         <img src="data:image/png;base64,{{ ticket_dto.qr_code }}"
                                              class="img-fluid"
                                              alt="QR Code"/>

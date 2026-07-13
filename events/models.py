@@ -17,6 +17,7 @@ class Event(BaseModel):
     class Status(models.TextChoices):
         DRAFT = 'draft', 'Draft'
         PUBLISHED = 'published', 'Published'
+        CANCELLED = 'cancelled', 'Cancelado'
 
     organization = models.ForeignKey(
         Organization,
@@ -56,6 +57,10 @@ class Event(BaseModel):
     invitations_count = models.PositiveIntegerField(
         default=0,
         help_text="Entradas reservadas como invitaciones. Se descuentan del cupo disponible para la venta.",
+    )
+    reservations_closed = models.BooleanField(
+        default=False,
+        help_text="Cuando está activo, no se pueden comprar nuevas entradas para este evento.",
     )
     transfers_enabled_until = models.DateTimeField(null=True, blank=True)
     volunteers_enabled_until = models.DateTimeField(blank=True, null=True)
@@ -314,6 +319,19 @@ class EventTermsAndConditionsAcceptance(BaseModel):
 
     def __str__(self):
         return f"{self.user.email} - {self.term.title} ({self.term.event.name})"
+
+
+class EventInvitation(BaseModel):
+    """Named invitation for an event (added by the organizer, counts against capacity)."""
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='invitations')
+    name = models.CharField(max_length=200)
+    checked_in = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} — {self.event.name}"
 
 
 class GrupoTipo(BaseModel):

@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load org_extras %}
 {% block title %}Eventos — {{ organization.name }}{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -10,7 +11,9 @@
     </div>
 </div>
 
-{% if events %}
+<!-- Upcoming events -->
+<h4 class="mt-4 mb-2">Próximos eventos</h4>
+{% if upcoming_events %}
 <table class="table table-hover">
     <thead>
         <tr>
@@ -22,7 +25,7 @@
         </tr>
     </thead>
     <tbody>
-        {% for event in events %}
+        {% for event in upcoming_events %}
         <tr>
             <td>{{ event.name }}</td>
             <td>
@@ -40,16 +43,89 @@
             </td>
             <td>{{ event.start|date:"d/m/Y H:i" }}</td>
             <td>{{ event.end|date:"d/m/Y H:i" }}</td>
-            <td>
+            <td class="d-flex gap-1 flex-wrap">
                 <a href="{% url 'dashboard_event_edit' org_slug=organization.slug event_id=event.pk %}"
                    class="btn btn-sm btn-outline-primary">Editar</a>
+                <a href="{% url 'dashboard_event_reservas' org_slug=organization.slug event_id=event.pk %}"
+                   class="btn btn-sm btn-outline-secondary">Ver reservas</a>
+                {% with sold=order_counts|get_item:event.pk %}
+                {% if sold %}
+                    <!-- Cancelar with confirmation (has sold tickets) -->
+                    <button type="button"
+                            class="btn btn-sm btn-outline-warning"
+                            data-bs-toggle="modal"
+                            data-bs-target="#cancelModal{{ event.pk }}">
+                        Cancelar
+                    </button>
+                    <div class="modal fade" id="cancelModal{{ event.pk }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Cancelar evento</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Este evento tiene <strong>{{ sold }} orden(es)</strong> con entradas vendidas.</p>
+                                    <p>Para cancelarlo, confirmar que se ha contactado a quienes adquirieron entradas para reubicarlos o devolver el dinero.</p>
+                                    <p class="text-muted small">El evento no se eliminará; las entradas pasarán a estado <strong>Cancelado</strong>.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+                                    <form method="post"
+                                          action="{% url 'dashboard_event_cancel' org_slug=organization.slug event_id=event.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-warning">Confirmar cancelación</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <form method="post"
+                          action="{% url 'dashboard_event_cancel' org_slug=organization.slug event_id=event.pk %}"
+                          class="d-inline"
+                          onsubmit="return confirm('¿Cancelar este evento?')">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-warning">Cancelar</button>
+                    </form>
+                {% endif %}
+                {% endwith %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info">No hay eventos próximos. <a href="{% url 'dashboard_event_create' org_slug=organization.slug %}">Crear el primero</a>.</div>
+{% endif %}
+
+<!-- Past events -->
+{% if past_events %}
+<h4 class="mt-5 mb-2">Eventos pasados</h4>
+<table class="table table-hover text-muted">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in past_events %}
+        <tr>
+            <td>{{ event.name }}</td>
+            <td>{{ event.start|date:"d/m/Y H:i" }}</td>
+            <td>{{ event.end|date:"d/m/Y H:i" }}</td>
+            <td class="d-flex gap-1">
                 <a href="{% url 'dashboard_event_reservas' org_slug=organization.slug event_id=event.pk %}"
                    class="btn btn-sm btn-outline-secondary">Ver reservas</a>
                 <form method="post"
                       action="{% url 'dashboard_event_delete' org_slug=organization.slug event_id=event.pk %}"
                       class="d-inline"
-                      onsubmit="return confirm('\u00bfEliminart este evento y todos sus tickets? Esta acci\u00f3n no se puede deshacer.')">
+                      onsubmit="return confirm('¿Eliminar el evento {{ event.name }} y todos sus datos? Esta acción no se puede deshacer.')">
                     {% csrf_token %}
+                    <input type="hidden" name="confirmed_sold_tickets" value="1">
                     <button class="btn btn-sm btn-outline-danger">Eliminar</button>
                 </form>
             </td>
@@ -57,7 +133,41 @@
         {% endfor %}
     </tbody>
 </table>
-{% else %}
-<div class="alert alert-info">No hay eventos aún. <a href="{% url 'dashboard_event_create' org_slug=organization.slug %}">Crear el primero</a>.</div>
 {% endif %}
+
+{% if cancelled_events %}
+<h4 class="mt-5 mb-2">Eventos cancelados</h4>
+<table class="table table-hover text-muted">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in cancelled_events %}
+        <tr>
+            <td>{{ event.name }} <span class="badge bg-danger ms-1">Cancelado</span></td>
+            <td>{{ event.start|date:"d/m/Y H:i" }}</td>
+            <td>{{ event.end|date:"d/m/Y H:i" }}</td>
+            <td class="d-flex gap-1">
+                <a href="{% url 'dashboard_event_reservas' org_slug=organization.slug event_id=event.pk %}"
+                   class="btn btn-sm btn-outline-secondary">Ver reservas</a>
+                <form method="post"
+                      action="{% url 'dashboard_event_delete' org_slug=organization.slug event_id=event.pk %}"
+                      class="d-inline"
+                      onsubmit="return confirm('¿Eliminar el evento {{ event.name }} y todos sus datos? Esta acción no se puede deshacer.')">
+                    {% csrf_token %}
+                    <input type="hidden" name="confirmed_sold_tickets" value="1">
+                    <button class="btn btn-sm btn-outline-danger">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
 {% endblock %}

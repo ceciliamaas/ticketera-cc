@@ -51,8 +51,13 @@ def home(request, event_slug=None):
         template = loader.get_template('tickets/home.html')
         return HttpResponse(template.render(context, request))
 
-    # Homepage: show gallery of all published events
-    active_events = Event.get_active_events().order_by('start')
+    # Homepage: show gallery of all upcoming published events
+    from django.utils import timezone
+    from django.db.models import Q
+    now = timezone.now()
+    active_events = Event.get_active_events().filter(
+        Q(end__gte=now) | Q(end__isnull=True, start__gte=now)
+    ).order_by('start')
     context['active_events'] = active_events
     context['event'] = None  # override context processor so gallery renders
 
@@ -61,16 +66,17 @@ def home(request, event_slug=None):
 
 
 def events_listing(request):
-    """List all active events"""
+    """List all active upcoming events"""
     from django.shortcuts import render
-    
-    # Get all active events
-    active_events = Event.get_active_events()
-    
+    from django.utils import timezone
+
+    # Only show events that haven't ended yet
+    active_events = Event.get_active_events().filter(end__gte=timezone.now())
+
     context = {
         'active_events': active_events,
     }
-    
+
     return render(request, 'tickets/events_listing.html', context)
 
 

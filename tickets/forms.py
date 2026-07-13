@@ -153,7 +153,7 @@ class CheckoutTicketSelectionForm(forms.Form):
         else:
             event = Event.get_main_event()
         tickets_remaining = event.tickets_remaining() or 0
-        available_tickets = event.max_tickets_per_order
+        available_tickets = event.max_tickets_per_order or tickets_remaining
         available_tickets = min(available_tickets, tickets_remaining)
         total_selected_tickets = sum(
             cleaned_data.get(field, 0)

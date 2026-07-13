@@ -218,6 +218,7 @@ class Order(BaseModel):
     
     processor_callback = models.JSONField(null=True, blank=True, help_text="Payment processor callback data")
     net_received_amount = models.DecimalField(decimal_places=2, max_digits=10, null=True, blank=True, help_text="Net amount received after fees")
+    mp_preference_id = models.CharField(max_length=200, blank=True, default='', help_text="Cached MercadoPago preference ID")
 
     class Meta:
         permissions = [
@@ -289,10 +290,11 @@ class Order(BaseModel):
         logging.info(f'Order {self.id} confirmation email sent')
 
     def get_payment_preference(self):
+        org = self.event.organization if self.event and self.event.organization else None
         import mercadopago
         access_token = (
-            self.event.organization.mp_access_token
-            if self.event and self.event.organization and self.event.organization.mp_connected
+            org.mp_access_token
+            if org and org.mp_connected
             else settings.MERCADOPAGO['ACCESS_TOKEN']
         )
         sdk = mercadopago.SDK(access_token)
@@ -312,7 +314,6 @@ class Order(BaseModel):
                 "failure": settings.APP_URL + reverse("payment_failure_callback", kwargs={'order_key': self.key}),
                 "pending": settings.APP_URL + reverse("payment_pending_callback", kwargs={'order_key': self.key})
             },
-            "auto_return": "approved",
             "notification_url": settings.APP_URL + reverse("mercadopago_webhook"),
             "statement_descriptor": self.event.organization.name if self.event and self.event.organization else self.event.name if self.event else "Ticketera",
             "external_reference": str(self.key),
