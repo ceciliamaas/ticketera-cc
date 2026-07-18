@@ -58,7 +58,20 @@ def home(request, event_slug=None):
     active_events = Event.get_active_events().filter(
         Q(end__gte=now) | Q(end__isnull=True, start__gte=now)
     ).order_by('start')
+
+    # City filter (multi-select: ?ciudad=BA&ciudad=Córdoba)
+    ciudad_filters = request.GET.getlist('ciudad')
+    ciudades = (active_events
+                .exclude(ciudad='')
+                .values_list('ciudad', flat=True)
+                .distinct()
+                .order_by('ciudad'))
+    if ciudad_filters:
+        active_events = active_events.filter(ciudad__in=ciudad_filters)
+
     context['active_events'] = active_events
+    context['ciudades'] = list(ciudades)
+    context['ciudad_filters'] = ciudad_filters
     context['event'] = None  # override context processor so gallery renders
 
     template = loader.get_template('tickets/home.html')

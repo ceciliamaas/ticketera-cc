@@ -38,6 +38,7 @@ class Event(BaseModel):
     name = models.CharField(max_length=255)
     location = models.CharField(max_length=255, blank=True, help_text="Location of the event")
     address = models.CharField(max_length=500, blank=True, help_text="Physical address of the event")
+    ciudad = models.CharField(max_length=200, blank=True, help_text="City where the event takes place")
     location_url = models.URLField(max_length=500, blank=True, help_text="URL for the event location (e.g. Google Maps link)")
     has_volunteers = models.BooleanField(default=False)
     start = models.DateTimeField(verbose_name="Fecha del evento")
@@ -78,6 +79,7 @@ class Event(BaseModel):
     description = models.TextField()
 
     attendee_must_be_registered = models.BooleanField(default=True, help_text="If checked, all attendees must be registered users")
+    apto_menores = models.BooleanField(default=False, verbose_name="Apto para menores de 18 años", help_text="Marcar si el evento es apto para menores de 18 años")
     
     admins = models.ManyToManyField(User, blank=True, related_name='admin_events', help_text="Users who can administer this event")
     access_scanner = models.ManyToManyField(User, blank=True, related_name='scanner_events', help_text="Users who can access the scanner for this event")

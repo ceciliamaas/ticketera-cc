@@ -4,6 +4,7 @@ import urllib.parse
 import requests
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.contrib.auth.models import User
 from django.db import models
 from django.shortcuts import render, redirect, get_object_or_404
@@ -67,10 +68,12 @@ def dashboard_event_list(request, org_slug):
 
 
 @login_required
+@transaction.atomic
 def dashboard_event_create(request, org_slug):
     organization = get_authorized_organization(request.user, org_slug, min_role='admin')
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES)
+        formset = TicketTypeFormSet(request.POST)
         if form.is_valid():
             event = form.save(commit=False)
             event.organization = organization
@@ -94,12 +97,24 @@ def dashboard_event_create(request, org_slug):
             formset = TicketTypeFormSet(request.POST, instance=event)
             if formset.is_valid():
                 formset.save()
+                if event.max_tickets:
+                    total = sum(
+                        tt.ticket_count or 0
+                        for tt in event.tickettype_set.exclude(ticket_count__isnull=True)
+                    )
+                    if total > event.max_tickets:
+                        messages.warning(
+                            request,
+                            f'Atención: la suma de entradas por tipo ({total}) supera el máximo del evento ({event.max_tickets}). Máximo disponible: {event.max_tickets}.'
+                        )
             messages.success(request, f'Evento "{event.name}" creado.')
-            return redirect('dashboard_event_edit', org_slug=org_slug, event_id=event.pk)
+            return redirect(reverse('dashboard_event_edit', kwargs={'org_slug': org_slug, 'event_id': event.pk}) + '?created=1')
     else:
         form = EventForm(initial={
             'location': organization.location,
+            'address': organization.address,
             'location_url': organization.location_url,
+            'ciudad': organization.ciudad,
         })
         formset = TicketTypeFormSet()
     return render(request, 'dashboard/event_form.html', {
@@ -246,6 +261,7 @@ def dashboard_event_reservas(request, org_slug, event_id):
 
 
 @login_required
+@transaction.atomic
 def dashboard_event_edit(request, org_slug, event_id):
     organization = get_authorized_organization(request.user, org_slug, min_role='admin')
     event = get_object_or_404(Event, pk=event_id, organization=organization)
@@ -268,8 +284,19 @@ def dashboard_event_edit(request, org_slug, event_id):
                 qs = Event.objects.filter(organization=organization, slug=event.slug).exclude(pk=event.pk)
             event.save()
             formset.save()
+            # Validate ticket_count sum vs max_tickets
+            if event.max_tickets:
+                total = sum(
+                    tt.ticket_count or 0
+                    for tt in event.tickettype_set.exclude(ticket_count__isnull=True)
+                )
+                if total > event.max_tickets:
+                    messages.warning(
+                        request,
+                        f'Atención: la suma de entradas por tipo ({total}) supera el máximo del evento ({event.max_tickets}).'
+                    )
             messages.success(request, f'Evento "{event.name}" guardado.')
-            return redirect('dashboard_event_edit', org_slug=org_slug, event_id=event.pk)
+            return redirect(reverse('dashboard_event_list', kwargs={'org_slug': org_slug}))
     else:
         form = EventForm(instance=event)
         formset = TicketTypeFormSet(instance=event)
@@ -316,6 +343,19 @@ def dashboard_event_delete(request, org_slug, event_id):
         event.delete()  # TicketTypes cascade automatically
     messages.success(request, f'Evento "{event_name}" eliminado.')
     return redirect('dashboard_event_list', org_slug=org_slug)
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def dashboard_ticket_type_delete(request, org_slug, event_id, tt_id):
+    from tickets.models import TicketType
+    organization = get_authorized_organization(request.user, org_slug, min_role='admin')
+    event = get_object_or_404(Event, pk=event_id, organization=organization)
+    tt = get_object_or_404(TicketType, pk=tt_id, event=event)
+    tt.delete()
+    messages.success(request, f'Tipo de ticket "{tt.name}" eliminado.')
+    return redirect('dashboard_event_edit', org_slug=org_slug, event_id=event_id)
 
 
 @login_required

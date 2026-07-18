@@ -54,9 +54,10 @@ class EventAdmin(admin.ModelAdmin):
     fields = (
         'organization', 'status',
         'name', 'slug',
-        'location', 'address', 'location_url',
+        'location', 'address', 'ciudad', 'location_url',
         'start', 'is_recurring',
         'max_tickets', 'max_tickets_per_order',
+        'apto_menores',
         'header_image', 'description',
     )
 
@@ -112,6 +113,8 @@ class EventAdmin(admin.ModelAdmin):
             initial.setdefault('location', org.location)
         if org.address:
             initial.setdefault('address', org.address)
+        if org.ciudad:
+            initial.setdefault('ciudad', org.ciudad)
         if org.location_url:
             initial.setdefault('location_url', org.location_url)
         return initial

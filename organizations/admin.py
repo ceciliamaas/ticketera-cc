@@ -48,9 +48,9 @@ class OrganizationAdmin(admin.ModelAdmin):
 
     def get_fields(self, request, obj=None):
         if request.user.is_superuser:
-            return ['name', 'slug', 'is_active', 'email', 'photo', 'location', 'address', 'location_url']
+            return ['name', 'slug', 'is_active', 'email', 'photo', 'location', 'address', 'ciudad', 'location_url']
         # Org admins can edit their own org's details but not slug/is_active/members
-        return ['name', 'email', 'photo', 'location', 'address', 'location_url']
+        return ['name', 'email', 'photo', 'location', 'address', 'ciudad', 'location_url']
 
     def get_inlines(self, request, obj):
         if request.user.is_superuser:

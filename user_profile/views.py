@@ -711,7 +711,8 @@ def profile_view(request):
     from allauth.account.utils import send_email_confirmation
     
     user = request.user
-    profile = user.profile
+    from user_profile.models import Profile
+    profile, _ = Profile.objects.get_or_create(user=user)
     
     # Get all email addresses for the user
     email_addresses = EmailAddress.objects.filter(user=user).order_by('-primary', 'email')
@@ -819,6 +820,22 @@ def profile_view(request):
     }
     
     return render(request, "mi_fuego/profile.html", context)
+
+
+@login_required
+@require_POST
+def delete_account_view(request):
+    user = request.user
+    confirmation = request.POST.get('confirm_delete', '').strip().lower()
+    if confirmation != 'eliminar':
+        messages.error(request, 'Debés escribir "eliminar" para confirmar.')
+        return redirect('profile')
+    from django.contrib.auth import logout
+    from django.db import transaction as _tx
+    with _tx.atomic():
+        logout(request)
+        user.delete()
+    return redirect('/')
 
 
 @login_required
@@ -2168,10 +2185,10 @@ def event_management_view(request, event_slug):
         class Meta:
             model = Event
             fields = [
-                'name', 'description', 'location', 'location_url',
+                'name', 'description', 'location', 'address', 'ciudad', 'location_url',
                 'start', 'end', 'header_image',
                 'max_tickets', 'venue_capacity',
-                'attendee_must_be_registered'
+                'attendee_must_be_registered', 'apto_menores'
             ]
             widgets = {
                 'description': CKEditor5Widget(config_name='extends'),
@@ -2179,14 +2196,21 @@ def event_management_view(request, event_slug):
                 'end': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
                 'name': forms.TextInput(attrs={'class': 'form-control'}),
                 'location': forms.TextInput(attrs={'class': 'form-control'}),
+                'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+                'ciudad': forms.TextInput(attrs={'class': 'form-control'}),
                 'location_url': forms.URLInput(attrs={'class': 'form-control'}),
                 'max_tickets': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
                 'venue_capacity': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
                 'attendee_must_be_registered': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+                'apto_menores': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             }
         
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
+            self.fields['description'].required = False
+            self.fields['end'].required = False
+            self.fields['max_tickets'].required = False
+            self.fields['venue_capacity'].required = False
             # Format datetime fields for HTML5 datetime-local input (always "local" wall time,
             # no TZ suffix). DB values are UTC-aware with USE_TZ; strftime on them would show
             # UTC clock in the widget while Django parses submitted values in TIME_ZONE — mismatch.
@@ -2202,17 +2226,20 @@ def event_management_view(request, event_slug):
     if request.method == 'POST':
         form = EventManagementForm(request.POST, request.FILES, instance=event)
         if form.is_valid():
-            event = form.save(commit=False)
-            # Use provided slug from form, or auto-generate from name if empty
-            provided_slug = request.POST.get('slug', '').strip()
-            if provided_slug:
-                event.slug = provided_slug
-            else:
-                from django.utils.text import slugify
-                event.slug = slugify(event.name)
-            event.save()
-            messages.success(request, 'Evento actualizado exitosamente.')
-            return redirect('event_management', event_slug=event.slug)
+            from django.db import transaction as _tx
+            with _tx.atomic():
+                event = form.save(commit=False)
+                provided_slug = request.POST.get('slug', '').strip()
+                if provided_slug:
+                    event.slug = provided_slug
+                else:
+                    from django.utils.text import slugify
+                    event.slug = slugify(event.name)
+                event.save()
+            from django.http import HttpResponseRedirect
+            from django.urls import reverse
+            url = reverse('event_management', kwargs={'event_slug': event.slug})
+            return HttpResponseRedirect(url + '?guardado=1')
         else:
             messages.error(request, 'Por favor corrige los errores en el formulario.')
     else:
@@ -2418,7 +2445,21 @@ def ticket_types_ajax(request, event_slug):
             if field_name in ['name', 'description']:
                 setattr(ticket_type, field_name, value)
             elif field_name in ['price', 'ticket_count']:
-                setattr(ticket_type, field_name, float(value) if value else None)
+                new_value = float(value) if value else None
+                if field_name == 'ticket_count' and new_value is not None and event.max_tickets:
+                    other_total = (
+                        TicketType.objects
+                        .filter(event=event)
+                        .exclude(id=ticket_type.id)
+                        .exclude(ticket_count__isnull=True)
+                        .values_list('ticket_count', flat=True)
+                    )
+                    allocated = sum(other_total) + int(new_value)
+                    if allocated > event.max_tickets:
+                        return JsonResponse({
+                            'error': f'El total asignado ({allocated}) supera el máximo del evento ({event.max_tickets}).'
+                        }, status=400)
+                setattr(ticket_type, field_name, new_value)
             elif field_name in ['date_from', 'date_to']:
                 from django.utils.dateparse import parse_datetime
                 if value:

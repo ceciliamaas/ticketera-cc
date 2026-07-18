@@ -3,6 +3,17 @@
 {% block content %}
 <h2 class="mb-4">{{ action }} evento</h2>
 
+{% if form.errors or formset.errors %}
+<div class="alert alert-danger">
+    <strong>No se pudo guardar. Corregí los siguientes errores:</strong>
+    <ul class="mb-0 mt-1">
+        {% for field in form %}{% for error in field.errors %}<li><strong>{{ field.label }}:</strong> {{ error }}</li>{% endfor %}{% endfor %}
+        {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        {% for ff in formset %}{% for field in ff %}{% for error in field.errors %}<li><strong>Tipo de ticket — {{ field.label }}:</strong> {{ error }}</li>{% endfor %}{% endfor %}{% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
 
@@ -70,6 +81,11 @@
                             {{ tt_form.price }}
                             {% for e in tt_form.price.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
                         </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Entradas disponibles</label>
+                            {{ tt_form.ticket_count }}
+                            {% for e in tt_form.ticket_count.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                        </div>
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Venta desde</label>
                             {{ tt_form.date_from }}
@@ -96,12 +112,12 @@
                         </div>
                         {% if tt_form.instance.pk %}
                             <div class="col-12 text-end">
-                                <div class="form-check form-check-inline">
-                                    {{ tt_form.DELETE }}
-                                    <label class="form-check-label text-danger" for="{{ tt_form.DELETE.id_for_label }}">
-                                        Eliminar este tipo de ticket
-                                    </label>
-                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        data-delete-url="{% url 'dashboard_ticket_type_delete' org_slug=organization.slug event_id=event.pk tt_id=tt_form.instance.pk %}"
+                                        data-delete-name="{{ tt_form.instance.name }}"
+                                        onclick="confirmDelete(this)">
+                                    <i class="fa-solid fa-trash me-1"></i>Eliminar tipo de ticket
+                                </button>
                             </div>
                         {% endif %}
                     </div>
@@ -119,7 +135,21 @@
     </div>
 </form>
 
+{# Standalone delete form — outside the main form to avoid nested-form HTML violation #}
+<form id="delete-tt-form" method="post" action="" style="display:none">
+    {% csrf_token %}
+</form>
+
 <script>
+function confirmDelete(btn) {
+    const name = btn.getAttribute('data-delete-name');
+    const url  = btn.getAttribute('data-delete-url');
+    if (!confirm('¿Eliminar el tipo de ticket «' + name + '»?')) return;
+    const form = document.getElementById('delete-tt-form');
+    form.action = url;
+    form.submit();
+}
+
 // Add Bootstrap classes to form controls
 document.querySelectorAll('input:not([type=checkbox]):not([type=file]):not([type=hidden]), select, textarea').forEach(el => {
     el.classList.add('form-control');
@@ -153,7 +183,58 @@ if (nameField && slugPreview) {
     });
 }
 
-// Add ticket type row dynamically
+// Validate ticket_count sum vs max_tickets on submit
+const mainForm = document.querySelector('form[method=post]:not([action])');
+if (mainForm) {
+    const ticketCountError = document.createElement('div');
+    ticketCountError.className = 'alert alert-danger d-none mt-2';
+    ticketCountError.id = 'ticket-count-error';
+    mainForm.insertBefore(ticketCountError, mainForm.querySelector('hr'));
+
+    mainForm.addEventListener('submit', function(e) {
+        const maxTicketsInput = document.getElementById('id_max_tickets');
+        const maxTickets = maxTicketsInput && maxTicketsInput.value ? parseInt(maxTicketsInput.value) : null;
+        if (!maxTickets) return;
+
+        const countInputs = document.querySelectorAll('[id$="-ticket_count"]');
+        let total = 0;
+        countInputs.forEach(input => {
+            const val = parseInt(input.value);
+            if (!isNaN(val)) total += val;
+        });
+
+        if (total > maxTickets) {
+            e.preventDefault();
+            ticketCountError.textContent = `La suma de entradas por tipo (${total}) supera el máximo del evento (${maxTickets}). Máximo disponible: ${maxTickets}.`;
+            ticketCountError.classList.remove('d-none');
+            ticketCountError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            ticketCountError.classList.add('d-none');
+        }
+    });
+
+    // Also validate on input change
+    document.addEventListener('input', function(e) {
+        if (e.target.id && e.target.id.endsWith('-ticket_count')) {
+            const maxTicketsInput = document.getElementById('id_max_tickets');
+            const maxTickets = maxTicketsInput && maxTicketsInput.value ? parseInt(maxTicketsInput.value) : null;
+            if (!maxTickets) return;
+            const countInputs = document.querySelectorAll('[id$="-ticket_count"]');
+            let total = 0;
+            countInputs.forEach(input => { const v = parseInt(input.value); if (!isNaN(v)) total += v; });
+            const remaining = maxTickets - total;
+            const error = document.getElementById('ticket-count-error');
+            if (total > maxTickets) {
+                error.textContent = `La suma de entradas por tipo (${total}) supera el máximo del evento (${maxTickets}). Máximo disponible: ${maxTickets}.`;
+                error.classList.remove('d-none');
+                e.target.classList.add('is-invalid');
+            } else {
+                error.classList.add('d-none');
+                document.querySelectorAll('[id$="-ticket_count"]').forEach(el => el.classList.remove('is-invalid'));
+            }
+        }
+    });
+}
 const totalForms = document.getElementById('id_tickettype_set-TOTAL_FORMS');
 const container = document.getElementById('formset-container');
 const addBtn = document.getElementById('add-ticket-type');
@@ -184,5 +265,51 @@ addBtn.addEventListener('click', () => {
     });
 });
 </script>
+
+{% if request.GET.created %}
+{# ── Share popup shown once after first creation ──────────────────────── #}
+<div class="modal fade" id="shareEventModal" tabindex="-1" aria-labelledby="shareEventModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="shareEventModalLabel">
+          <i class="fa-solid fa-share-nodes me-2"></i>¡Evento creado!
+        </h5>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">Copiá el link para compartir el evento:</p>
+        <div class="input-group">
+          <input type="text" id="share-link" class="form-control"
+                 value="{{ request.scheme }}://{{ request.get_host }}{% url 'event_home' event.slug %}"
+                 readonly>
+          <button class="btn btn-outline-secondary" type="button" onclick="copyShareLink()">
+            <i class="fa-regular fa-copy"></i>
+          </button>
+        </div>
+        <small id="copy-confirm" class="text-success d-none mt-1">¡Copiado!</small>
+      </div>
+      <div class="modal-footer">
+        <a href="{% url 'dashboard_event_list' org_slug=organization.slug %}" class="btn btn-primary">
+          Ir al dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function copyShareLink() {
+    const input = document.getElementById('share-link');
+    navigator.clipboard.writeText(input.value).then(() => {
+        document.getElementById('copy-confirm').classList.remove('d-none');
+    });
+}
+window.addEventListener('load', function() {
+    const shareModal = new bootstrap.Modal(document.getElementById('shareEventModal'), {backdrop: 'static', keyboard: false});
+    shareModal.show();
+});
+</script>
+{% endif %}
+
 {% endblock %}
 
