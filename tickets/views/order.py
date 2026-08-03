@@ -7,8 +7,6 @@ from django.urls import reverse
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-import mercadopago
-from django.conf import settings
 
 from events.models import Event
 from tickets.models import Order, TicketType, OrderTicket, Coupon, Ticket
@@ -77,37 +75,15 @@ def order(request, ticket_type_id):
 
 def order_detail(request, order_key):
     order = Order.objects.get(key=order_key)
-    logging.info('got order')
 
     context = {
         'order': order,
         'event': order.ticket_type.event,
         'is_order_valid': (order.status == 'CONFIRMED') or is_order_valid(order),
     }
-    logging.info('got order context')
-
-    if order.amount > 0:
-        logging.info('getting payment preferences')
-        payment_preference_id = order.get_payment_preference()['id'] if order.status == Order.OrderStatus.PENDING else None
-
-        org = order.ticket_type.event.organization if order.ticket_type and order.ticket_type.event and order.ticket_type.event.organization else None
-        mp_public_key = (
-            org.mp_public_key
-            if org and org.mp_connected and org.mp_public_key
-            else settings.MERCADOPAGO['PUBLIC_KEY']
-        )
-
-        context.update({
-            'preference_id': payment_preference_id,
-            'MERCADOPAGO_PUBLIC_KEY': mp_public_key,
-        })
-    logging.info('got payment preferences')
 
     template = loader.get_template('tickets/order_detail.html')
-    logging.info('got template')
-
     rendered_template = template.render(context, request)
-    logging.info('rendered template')
 
     return HttpResponse(rendered_template)
 
@@ -136,26 +112,7 @@ def payment_pending(request, order_key):
 
 @csrf_exempt
 def payment_notification(request):
-    if request.GET['topic'] == 'payment':
-        sdk = mercadopago.SDK(settings.MERCADOPAGO['ACCESS_TOKEN'])
-        payment = sdk.payment().get(request.GET.get('id'))['response']
-
-        merchant_order = sdk.merchant_order().get(payment['order']['id'])['response']
-
-        order = Order.objects.get(id=int(merchant_order['external_reference']))
-
-        paid_amount = 0
-        for payment in merchant_order['payments']:
-            if payment['status'] == 'approved':
-                paid_amount += payment['total_paid_amount']
-
-        logging.info('paid amount: %s', paid_amount)
-        if paid_amount >= merchant_order['total_amount']:
-            logging.info('order is paid')
-            _complete_order(order)
-            logging.info('order completed')
-
-    return HttpResponse('Notified!')
+    return HttpResponse('OK')
 
 @login_required
 def check_order_status(request, order_key):
@@ -193,40 +150,6 @@ def checkout_payment_callback(request, order_key):
     request.session.pop('ticket_selection', None)
     request.session.pop('donations', None)
     request.session.pop('order_sid', None)
-
-    order = Order.objects.get(key=order_key)
-    if order.email != request.user.email:
-        return HttpResponseForbidden('Forbidden')
-
-    # Fallback: MP includes payment_id + status in the redirect URL.
-    # If the order is still PENDING and MP says approved, verify directly
-    # so the user isn't stuck waiting for a webhook that may be delayed.
-    if order.status == Order.OrderStatus.PENDING:
-        payment_id = request.GET.get('payment_id') or request.GET.get('collection_id')
-        mp_status = request.GET.get('status') or request.GET.get('collection_status')
-        if payment_id and mp_status == 'approved':
-            try:
-                _org = order.event.organization if order.event and order.event.organization else None
-                _mp_token = (_org.mp_access_token if _org and _org.mp_access_token else None) or settings.MERCADOPAGO['ACCESS_TOKEN']
-                sdk = mercadopago.SDK(_mp_token)
-                payment = sdk.payment().get(payment_id)['response']
-                if (
-                    payment.get('status') == 'approved'
-                    and str(payment.get('external_reference')) == str(order.key)
-                ):
-                    from django.db import transaction
-                    with transaction.atomic():
-                        order_qs = Order.objects.select_for_update().filter(
-                            key=order.key, status=Order.OrderStatus.PENDING
-                        )
-                        if order_qs.exists():
-                            o = order_qs.get()
-                            o.status = Order.OrderStatus.PROCESSING
-                            o.processor_callback = payment
-                            o.net_received_amount = payment.get('transaction_details', {}).get('net_received_amount')
-                            o.save()
-            except Exception as e:
-                logging.warning('checkout_payment_callback: MP fallback verification failed: %s', e)
 
     return render(request, 'checkout/payment_callback.html', {
         'order_key': order_key,

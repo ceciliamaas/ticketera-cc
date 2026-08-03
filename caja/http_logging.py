@@ -1,8 +1,6 @@
 import json
 import logging
 
-import requests
-
 logger = logging.getLogger('caja.http')
 
 MAX_LOG_CHARS = 12000
@@ -88,27 +86,3 @@ def log_incoming_http(*, service, method, url, status_code, body=None):
         status_code,
         format_body_for_log(body),
     )
-
-
-def mp_request(method, url, **kwargs):
-    headers = kwargs.get('headers')
-    body = kwargs.get('json')
-    if body is None and kwargs.get('data') is not None:
-        body = kwargs.get('data')
-    log_outgoing_http(
-        service='mercadopago',
-        method=method,
-        url=url,
-        headers=headers,
-        params=kwargs.get('params'),
-        body=body,
-    )
-    response = requests.request(method, url, **kwargs)
-    log_incoming_http(
-        service='mercadopago',
-        method=method,
-        url=url,
-        status_code=response.status_code,
-        body=response.text,
-    )
-    return response

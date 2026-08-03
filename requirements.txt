@@ -46,7 +46,6 @@ kappa==0.6.0
 libsass==0.21.0
 libsasscompiler==0.1.9
 MarkupSafe==2.1.5
-mercadopago==2.0.8
 more-itertools==10.4.0
 multidict==6.0.5
 oauthlib==3.2.2

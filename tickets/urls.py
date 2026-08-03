@@ -1,7 +1,7 @@
 from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
 
-from .views import home, order, ticket, checkout, webhooks, new_ticket
+from .views import home, order, ticket, checkout, new_ticket
 from tickets.views import admin
 from tickets.views.broadcast_holder_tickets_email import broadcast_holder_tickets_email
 from tickets.views.send_holder_tickets_email import send_holder_tickets_email
@@ -62,9 +62,6 @@ urlpatterns = [
     path('checkout/select-tickets', checkout.select_tickets, name='select_tickets'),
     path('checkout/order-summary', checkout.order_summary, name='order_summary'),
     path('term/<slug:slug>/', checkout.view_term_description, name='view_term_description'),
-
-    # Webhook related paths
-    path('webhooks/mercadopago', webhooks.mercadopago_webhook, name='mercadopago_webhook'),
 
     path('ticket/<str:ticket_key>/assign', new_ticket.assign_ticket, name='assign_ticket'),
     path('ticket/<str:ticket_key>/unassign', new_ticket.unassign_ticket, name='unassign_ticket'),

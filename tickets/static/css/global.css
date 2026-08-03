@@ -290,8 +290,7 @@ dl {
   }
 }
 
-.btn.btn-submit,
-.cho-container .mercadopago-button {
+.btn.btn-submit {
   background-color: #503c3a;
   line-height: 1rem;
   color: lighten(#503c3a, 60%);

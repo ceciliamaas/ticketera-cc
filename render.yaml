@@ -34,9 +34,7 @@ services:
           name: ticketera-db
           property: port
       # Set these manually in Render dashboard:
-      # - key: MERCADOPAGO_PUBLIC_KEY
-      # - key: MERCADOPAGO_ACCESS_TOKEN
-      # - key: MERCADOPAGO_WEBHOOK_SECRET
+      # Payment processor keys go here when ready
       # - key: GOOGLE_CLIENT_ID
       # - key: GOOGLE_CLIENT_SECRET
       # - key: DEFAULT_FROM_EMAIL

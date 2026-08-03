@@ -153,36 +153,10 @@ class EventCajaProduct(BaseModel):
         return f'{self.event_caja.name} - {self.event_product.display_name}'
 
 
-class EventCajaMercadoPagoConfig(BaseModel):
-    event_caja = models.OneToOneField(
-        EventCaja,
-        on_delete=models.CASCADE,
-        related_name='mercadopago_config',
-    )
-    external_store_id = models.CharField(max_length=64, blank=True)
-    external_pos_id = models.CharField(max_length=64, blank=True)
-    store_id = models.BigIntegerField(null=True, blank=True)
-    pos_id = models.BigIntegerField(null=True, blank=True)
-    terminal_id = models.CharField(max_length=128, blank=True)
-
-    def __str__(self):
-        return f'MP config {self.event_caja.name}'
-
-    @property
-    def qr_ready(self):
-        return bool(self.external_pos_id and self.store_id and self.pos_id)
-
-    @property
-    def point_ready(self):
-        return bool(self.terminal_id)
-
-
 class CajaSale(BaseModel):
     class PaymentMethod(models.TextChoices):
         EFECTIVO = 'EFECTIVO', 'Efectivo'
         TRANSFERENCIA = 'TRANSFERENCIA', 'Transferencia'
-        MP_QR = 'MP_QR', 'Mercado Pago QR'
-        MP_POINT = 'MP_POINT', 'Mercado Pago Postnet'
 
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pendiente'
@@ -221,10 +195,6 @@ class CajaSale(BaseModel):
         on_delete=models.SET_NULL,
         related_name='caja_sales',
     )
-    mp_order_id = models.CharField(max_length=64, blank=True)
-    mp_payment_id = models.CharField(max_length=64, blank=True)
-    mp_qr_data = models.TextField(blank=True)
-    processor_callback = models.JSONField(null=True, blank=True)
 
     class Meta:
         ordering = ['-created_at']

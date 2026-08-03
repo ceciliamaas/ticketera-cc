@@ -1,22 +1,15 @@
 import logging
-import os
-import requests
-from django.conf import settings
-from events.models import Event
-from tickets.models import Order
 
 logger = logging.getLogger(__name__)
 
 
 def check_pending_payments(event, context):
     """
-    Scheduled task to check pending orders and verify payment status with MercadoPago.
-    Runs every 5 minutes via Zappa scheduled events.
-    
-    Args:
-        event: AWS Lambda event (unused but required by Zappa)
-        context: AWS Lambda context (unused but required by Zappa)
+    Scheduled task to check pending orders and verify payment status.
+    MercadoPago integration has been removed — reimplement for a new payment provider.
     """
+    logger.warning('check_pending_payments: MercadoPago integration removed. No payment status check performed.')
+
     logger.info("=" * 80)
     logger.info("Payment Check Cron Job Started")
     logger.info("=" * 80)

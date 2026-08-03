@@ -15,8 +15,6 @@ from caja.views.operator_views import (
     api_cancel_sale,
     api_cancel_paid_sale,
     api_create_sale,
-    api_pay_mp_point,
-    api_pay_mp_qr,
     api_sale_status,
     caja_v2_operator_view,
     caja_v2_summary_view,

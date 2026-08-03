@@ -108,30 +108,8 @@
 
     <div class="d-grid gap-2 d-md-flex" id="pay-buttons">
       <button class="btn btn-success flex-fill text-white" data-pay="CASH" style="color: white;">Efectivo</button>
-      {% if mp_qr_ready %}<button class="btn btn-info flex-fill" data-pay="MP_QR">QR (Mercadopago/MODO/Lemon/etc)</button>{% endif %}
-      {% if mp_point_ready %}<button class="btn btn-warning flex-fill" data-pay="MP_POINT">MP Postnet</button>{% endif %}
+      <button class="btn btn-secondary flex-fill" data-pay="TRANSFERENCIA">Transferencia</button>
     </div>
-  </div>
-
-  <div id="mp-qr-section" style="display:none;" class="mobile-payment-screen py-4">
-    <p class="text-muted mb-1" id="mp-qr-total"></p>
-    <div id="mp-qr-container" class="d-flex justify-content-center my-3" style="min-height:280px;align-items:center;"></div>
-    <div id="mp-qr-loading" class="mb-3">
-      <div class="spinner-border text-primary" role="status"></div>
-      <p class="text-muted mt-2 mb-0" id="mp-qr-loading-text">Generando QR...</p>
-    </div>
-    <div id="mp-qr-waiting" class="mb-3" style="display:none;">
-      <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-      <span class="text-muted ms-2">Esperando pago...</span>
-    </div>
-    <button type="button" class="btn btn-outline-danger" id="mp-qr-cancel">Cancelar</button>
-  </div>
-
-  <div id="point-section" style="display:none;" class="text-center mt-4">
-    <h5>Completá el pago en el Postnet</h5>
-    <div class="spinner-border text-primary my-3" role="status"></div>
-    <p class="text-muted" id="point-status-text">Esperando pago...</p>
-    <button type="button" class="btn btn-outline-danger mt-2" id="point-cancel">Cancelar</button>
   </div>
 
   <div id="success-section" style="display:none;" class="mobile-payment-screen py-5">
@@ -158,7 +136,6 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script>
 (function() {
   const app = document.getElementById('caja-v2-app');
@@ -167,7 +144,6 @@
 
   let pollTimer = null;
   let countdownTimer = null;
-  let pollDelay = 2000;
   let statusUrl = null;
   let cancelUrl = null;
   let activePayBtn = null;
@@ -176,8 +152,6 @@
     CASH: 'Efectivo',
     EFECTIVO: 'Efectivo',
     TRANSFERENCIA: 'Transferencia',
-    MP_QR: 'QR',
-    MP_POINT: 'MP Postnet',
   };
 
   payButtons.forEach((btn) => {
@@ -305,24 +279,7 @@
     toggleSiteHeader(true);
     document.getElementById('caja-header').style.display = 'none';
     document.getElementById('cart-section').style.display = 'none';
-    document.getElementById('mp-qr-section').style.display = 'none';
-    document.getElementById('point-section').style.display = 'none';
     document.getElementById('success-section').style.display = 'none';
-  }
-
-  function resetMpQrUi() {
-    document.getElementById('mp-qr-section').style.display = 'none';
-    document.getElementById('mp-qr-total').textContent = '';
-    document.getElementById('mp-qr-container').innerHTML = '';
-    document.getElementById('mp-qr-container').style.visibility = 'visible';
-    document.getElementById('mp-qr-loading').style.display = 'none';
-    document.getElementById('mp-qr-waiting').style.display = 'none';
-    document.getElementById('mp-qr-loading-text').textContent = 'Generando QR...';
-    const qrCancelBtn = document.getElementById('mp-qr-cancel');
-    if (qrCancelBtn) {
-      qrCancelBtn.disabled = false;
-      qrCancelBtn.innerHTML = 'Cancelar';
-    }
   }
 
   function resetToCaja() {
@@ -334,9 +291,7 @@
     cancelUrl = null;
     setPayProcessing(false);
     toggleSiteHeader(false);
-    resetMpQrUi();
     toggleCajaTotalsPanel(true);
-    document.getElementById('point-section').style.display = 'none';
     document.getElementById('success-section').style.display = 'none';
     document.getElementById('caja-header').style.display = '';
     document.getElementById('cart-section').style.display = '';
@@ -355,61 +310,6 @@
     clearTimeout(pollTimer);
     clearTimeout(countdownTimer);
     window.location.reload();
-  }
-
-  function renderDynamicQr(qrResponse) {
-    const container = document.getElementById('mp-qr-container');
-    container.innerHTML = '';
-    if (qrResponse.qr_image) {
-      const img = document.createElement('img');
-      img.src = qrResponse.qr_image;
-      img.alt = 'QR de pago';
-      img.className = 'img-fluid';
-      img.style.maxWidth = '280px';
-      container.appendChild(img);
-      return;
-    }
-    const qrData = qrResponse.qr_data || qrResponse;
-    if (typeof QRCode === 'undefined') {
-      throw new Error('No se pudo cargar el generador de QR');
-    }
-    const canvas = document.createElement('canvas');
-    container.appendChild(canvas);
-    QRCode.toCanvas(canvas, qrData, { width: 280, margin: 2 });
-  }
-
-  function setMpQrLoading(visible, text) {
-    document.getElementById('mp-qr-loading').style.display = visible ? 'block' : 'none';
-    document.getElementById('mp-qr-container').style.visibility = visible ? 'hidden' : 'visible';
-    if (text) document.getElementById('mp-qr-loading-text').textContent = text;
-  }
-
-  function showMpQrScreen(totalLabel) {
-    setPayProcessing(false);
-    toggleCajaTotalsPanel(true);
-    hideAllScreens();
-    document.getElementById('mp-qr-section').style.display = 'flex';
-    document.getElementById('mp-qr-total').textContent = totalLabel;
-    document.getElementById('mp-qr-container').innerHTML = '';
-    setMpQrLoading(true, 'Generando QR...');
-  }
-
-  function pollStatus(onPaid) {
-    fetch(statusUrl).then(r => r.json()).then(data => {
-      if (data.status === 'PAID') {
-        onPaid(data);
-        return;
-      }
-      if (data.status === 'CANCELLED' || data.status === 'EXPIRED') {
-        alert('Pago cancelado o expirado');
-        resetToCaja();
-        return;
-      }
-      pollTimer = setTimeout(() => pollStatus(onPaid), pollDelay);
-      pollDelay = Math.min(Math.round(pollDelay * 1.5), 10000);
-    }).catch(() => {
-      pollTimer = setTimeout(() => pollStatus(onPaid), pollDelay);
-    });
   }
 
   function formatMoney(value) {
@@ -434,9 +334,7 @@
   function updateCajaTotalsCard(cajaTotals) {
     if (!cajaTotals) return;
     const cashEl = document.getElementById('caja-total-cash');
-    const mpEl = document.getElementById('caja-total-mp');
     if (cashEl) cashEl.textContent = formatMoney(cajaTotals.cash_total);
-    if (mpEl) mpEl.textContent = formatMoney(cajaTotals.mp_total);
   }
 
   function showSuccess(totalAmount, cajaTotals) {
@@ -467,12 +365,6 @@
   }
 
   async function cancelPendingSale() {
-    const qrCancelBtn = document.getElementById('mp-qr-cancel');
-    if (qrCancelBtn && !qrCancelBtn.disabled) {
-      qrCancelBtn.disabled = true;
-      qrCancelBtn.innerHTML =
-        '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Cancelando...';
-    }
     if (!cancelUrl) {
       resetToCaja();
       return;
@@ -482,9 +374,6 @@
     } catch (e) { /* ignore */ }
     resetToCaja();
   }
-
-  document.getElementById('mp-qr-cancel').addEventListener('click', cancelPendingSale);
-  document.getElementById('point-cancel').addEventListener('click', cancelPendingSale);
 
   async function processSale(paymentMethod, btn) {
     const lines = getLines();
@@ -509,30 +398,7 @@
       const base = createUrl.replace('/api/sales/', '/api/sales/' + sale.sale_id + '/');
       statusUrl = base + 'status/';
       cancelUrl = base + 'cancel/';
-      const totalLabel = 'Total: $' + parseFloat(sale.total_amount).toLocaleString('es-AR');
 
-      if (paymentMethod === 'MP_QR') {
-        showMpQrScreen(totalLabel);
-        setMpQrLoading(true, 'Generando QR...');
-        const qr = await postJson(base + 'pay/mp-qr/', {});
-        if (!qr.qr_data && !qr.qr_image) throw new Error('Mercado Pago no devolvió un QR');
-        renderDynamicQr(qr);
-        setMpQrLoading(false);
-        document.getElementById('mp-qr-waiting').style.display = 'block';
-        pollDelay = 2000;
-        pollStatus((data) => showSuccess(data.total_amount, data.caja_totals));
-        return;
-      }
-
-      if (paymentMethod === 'MP_POINT') {
-        setPayProcessing(false);
-        toggleCajaTotalsPanel(true);
-        hideAllScreens();
-        document.getElementById('point-section').style.display = 'block';
-        await postJson(base + 'pay/mp-point/', {});
-        pollDelay = 2000;
-        pollStatus((data) => showSuccess(data.total_amount, data.caja_totals));
-      }
     } catch (e) {
       setPayProcessing(false);
       alert(e.message);

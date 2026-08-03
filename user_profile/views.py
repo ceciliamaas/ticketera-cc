@@ -1205,7 +1205,6 @@ def la_sede_view(request):
     if not active_subscriptions:
         raise Http404
 
-    from user_profile.services.sede_mercadopago import format_payment_method
     from user_profile.models import SedeSubscriptionPlan
 
     plan_ids = {subscription.plan_id for subscription in active_subscriptions if subscription.plan_id}
@@ -1224,12 +1223,12 @@ def la_sede_view(request):
             'subscription': subscription,
             'plan_name': plan_name or tier_name or f'Suscripcion {subscription.subscription_id}',
             'billing_cycle': ((plan.billing_cycle if plan else '') or '').strip(),
-            'payment_method_label': format_payment_method(subscription.payment_method),
+            'payment_method_label': subscription.payment_method or '',
             'status_label': SUBSCRIPTION_STATUS_LABELS.get(
                 subscription.status,
                 subscription.status or 'Activa',
             ),
-            'manage_url': 'https://www.mercadopago.com.ar/subscriptions',
+            'manage_url': '',
             'is_manual_membership': is_manual_membership,
         })
 
@@ -1624,30 +1623,6 @@ def event_admin_view(request, event_slug):
         if row["sale_day"] is not None
     ]
 
-    # MercadoPago commission details (match provided SQL: ONLINE_PURCHASE only)
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT
-                COALESCE(SUM(amount), 0) AS total_bruto,
-                COALESCE(SUM(net_received_amount), 0) AS total_neto
-            FROM tickets_order
-            WHERE event_id = %s
-              AND status = 'CONFIRMED'
-              AND order_type = 'ONLINE_PURCHASE'
-            """,
-            [event.id],
-        )
-        mp_totals_row = cursor.fetchone()
-
-    mp_total_bruto = Decimal(str((mp_totals_row[0] if mp_totals_row else 0) or 0))
-    mp_total_neto = Decimal(str((mp_totals_row[1] if mp_totals_row else 0) or 0))
-    mp_comisiones = (mp_total_bruto - mp_total_neto).quantize(Decimal("0.01"))
-    if mp_total_bruto > 0:
-        mp_porcentaje = ((Decimal("1") - (mp_total_neto / mp_total_bruto)) * 100).quantize(Decimal("0.01"))
-    else:
-        mp_porcentaje = Decimal("0.00")
-    
     # Get the main event for context
     main_event = Event.get_main_event()
     
@@ -1806,10 +1781,10 @@ def event_admin_view(request, event_slug):
             "occupancy_percentage": event.occupancy_percentage,
             "attendees_left": event.attendees_left,
             # MercadoPago commission debug (ONLINE_PURCHASE only)
-            "mp_total_bruto": mp_total_bruto,
-            "mp_total_neto": mp_total_neto,
-            "mp_comisiones": mp_comisiones,
-            "mp_porcentaje": mp_porcentaje,
+            "mp_total_bruto": Decimal("0"),
+            "mp_total_neto": Decimal("0"),
+            "mp_comisiones": Decimal("0"),
+            "mp_porcentaje": Decimal("0.00"),
             # Regular orders data
             "regular_tickets_sold": result[13] or 0,
             "regular_ticket_revenue": result[14] or 0,

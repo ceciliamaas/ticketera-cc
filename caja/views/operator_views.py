@@ -8,20 +8,9 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET, require_POST
 
 from caja.context import mi_fuego_admin_context
-from caja.mercadopago_instore import (
-    MercadoPagoInStoreError,
-    cancel_order,
-    create_point_order,
-    create_qr_order,
-    get_order,
-    is_order_paid,
-    is_order_terminal_failure,
-)
 from caja.models import CajaSale, EventCaja, EventCajaProduct
 from caja.operator_stats import ticket_caja_operator_stats
 from caja.permissions import get_event_for_caja
-from caja.qr_utils import qr_string_to_data_url
-from caja.services.mercadopago_setup import ensure_mp_qr_config
 from caja.services.sales import create_pending_sale, finalize_caja_sale
 from caja.stock import available, InsufficientStockError
 
@@ -51,20 +40,9 @@ def _caja_payment_totals(caja):
             ),
             default=0,
         ),
-        mp_total=models.Sum(
-            'total_amount',
-            filter=models.Q(
-                payment_method__in=[
-                    CajaSale.PaymentMethod.MP_QR,
-                    CajaSale.PaymentMethod.MP_POINT,
-                ],
-            ),
-            default=0,
-        ),
     )
     return {
         'cash_total': totals['cash_total'] or 0,
-        'mp_total': totals['mp_total'] or 0,
         'tx_count': paid_sales.count(),
     }
 
@@ -73,7 +51,6 @@ def _serialized_caja_payment_totals(caja):
     totals = _caja_payment_totals(caja)
     return {
         'cash_total': str(totals['cash_total']),
-        'mp_total': str(totals['mp_total']),
         'tx_count': totals['tx_count'],
     }
 
@@ -83,13 +60,6 @@ def caja_v2_operator_view(request, event_slug, caja_id):
     event = get_event_for_caja(request.user, event_slug)
     caja = get_object_or_404(EventCaja, id=caja_id, event=event, is_active=True)
     caja_products = _caja_products_for_sale(caja)
-    mp_config = getattr(caja, 'mercadopago_config', None)
-    if mp_config and not mp_config.qr_ready:
-        try:
-            ensure_mp_qr_config(caja, event)
-            mp_config.refresh_from_db()
-        except MercadoPagoInStoreError:
-            pass
 
     products = []
     has_ticket_products = False
@@ -110,8 +80,6 @@ def caja_v2_operator_view(request, event_slug, caja_id):
         'caja': caja,
         'products': products,
         'has_ticket_products': has_ticket_products,
-        'mp_qr_ready': mp_config.qr_ready if mp_config else False,
-        'mp_point_ready': mp_config.point_ready if mp_config else False,
         'caja_payment_totals': _caja_payment_totals(caja),
     })
     if has_ticket_products:
@@ -201,126 +169,17 @@ def api_create_sale(request, event_slug, caja_id):
 
 
 @login_required
-@require_POST
-def api_pay_mp_qr(request, event_slug, caja_id, sale_id):
-    event = get_event_for_caja(request.user, event_slug)
-    caja = get_object_or_404(EventCaja, id=caja_id, event=event)
-    sale = get_object_or_404(CajaSale, id=sale_id, event_caja=caja, status=CajaSale.Status.PENDING)
-
-    mp_config = getattr(caja, 'mercadopago_config', None)
-    if not mp_config or not mp_config.qr_ready:
-        try:
-            ensure_mp_qr_config(caja, event)
-            mp_config = getattr(caja, 'mercadopago_config', None)
-        except MercadoPagoInStoreError as exc:
-            return JsonResponse({'error': str(exc)}, status=exc.http_status)
-    if not mp_config or not mp_config.qr_ready:
-        return JsonResponse({'error': 'Mercado Pago QR no configurado para esta caja'}, status=400)
-
-    external_ref = f'caja-sale-{sale.id}'
-    try:
-        from caja.mercadopago_instore import validate_mp_qr_amount
-        validate_mp_qr_amount(sale.total_amount)
-        mp_order = create_qr_order(
-            external_reference=external_ref,
-            total_amount=sale.total_amount,
-            external_pos_id=mp_config.external_pos_id,
-            description=f'{event.name} - {caja.name}',
-        )
-    except MercadoPagoInStoreError as exc:
-        sale.status = CajaSale.Status.CANCELLED
-        sale.save(update_fields=['status', 'updated_at'])
-        return JsonResponse({'error': str(exc)}, status=exc.http_status)
-
-    sale.mp_order_id = mp_order.get('id', '')
-    payments = mp_order.get('transactions', {}).get('payments', [])
-    if payments:
-        sale.mp_payment_id = payments[0].get('id', '')
-    sale.mp_qr_data = mp_order.get('type_response', {}).get('qr_data', '')
-    sale.processor_callback = mp_order
-    sale.payment_method = CajaSale.PaymentMethod.MP_QR
-    sale.save()
-
-    qr_image = qr_string_to_data_url(sale.mp_qr_data) if sale.mp_qr_data else None
-    return JsonResponse({
-        'sale_id': sale.id,
-        'mp_order_id': sale.mp_order_id,
-        'qr_data': sale.mp_qr_data,
-        'qr_image': qr_image,
-        'status': sale.status,
-    })
-
-
-@login_required
-@require_POST
-def api_pay_mp_point(request, event_slug, caja_id, sale_id):
-    event = get_event_for_caja(request.user, event_slug)
-    caja = get_object_or_404(EventCaja, id=caja_id, event=event)
-    sale = get_object_or_404(CajaSale, id=sale_id, event_caja=caja, status=CajaSale.Status.PENDING)
-
-    mp_config = getattr(caja, 'mercadopago_config', None)
-    if not mp_config or not mp_config.point_ready:
-        return JsonResponse({'error': 'Mercado Pago Postnet no configurado para esta caja'}, status=400)
-
-    external_ref = f'caja-sale-{sale.id}'
-    try:
-        mp_order = create_point_order(
-            external_reference=external_ref,
-            total_amount=sale.total_amount,
-            terminal_id=mp_config.terminal_id,
-            description=f'{event.name} - {caja.name}',
-        )
-    except MercadoPagoInStoreError as exc:
-        return JsonResponse({'error': str(exc)}, status=502)
-
-    sale.mp_order_id = mp_order.get('id', '')
-    payments = mp_order.get('transactions', {}).get('payments', [])
-    if payments:
-        sale.mp_payment_id = payments[0].get('id', '')
-    sale.processor_callback = mp_order
-    sale.payment_method = CajaSale.PaymentMethod.MP_POINT
-    sale.save()
-
-    return JsonResponse({
-        'sale_id': sale.id,
-        'mp_order_id': sale.mp_order_id,
-        'status': sale.status,
-        'message': 'Orden enviada al Postnet. Esperá el pago en el dispositivo.',
-    })
-
-
-@login_required
 @require_GET
 def api_sale_status(request, event_slug, caja_id, sale_id):
     event = get_event_for_caja(request.user, event_slug)
     caja = get_object_or_404(EventCaja, id=caja_id, event=event)
     sale = get_object_or_404(CajaSale, id=sale_id, event_caja=caja)
 
-    if sale.status == CajaSale.Status.PENDING and sale.mp_order_id:
-        try:
-            mp_order = get_order(sale.mp_order_id)
-            sale.processor_callback = mp_order
-            if is_order_paid(mp_order):
-                payments = mp_order.get('transactions', {}).get('payments', [])
-                net = None
-                if payments:
-                    net = payments[0].get('paid_amount') or payments[0].get('amount')
-                finalize_caja_sale(sale, net_received_amount=net)
-                sale.refresh_from_db()
-            elif is_order_terminal_failure(mp_order):
-                sale.status = CajaSale.Status.CANCELLED if mp_order.get('status') in (
-                    'canceled', 'cancelled',
-                ) else CajaSale.Status.EXPIRED
-                sale.save(update_fields=['status', 'processor_callback', 'updated_at'])
-        except MercadoPagoInStoreError as exc:
-            logger.warning('MP poll error for sale %s: %s', sale.id, exc)
-
     return JsonResponse({
         'sale_id': sale.id,
         'status': sale.status,
         'total_amount': str(sale.total_amount),
         'order_key': str(sale.order.key) if sale.order_id else None,
-        'qr_data': sale.mp_qr_data,
         'caja_totals': _serialized_caja_payment_totals(caja),
     })
 
@@ -334,12 +193,6 @@ def api_cancel_sale(request, event_slug, caja_id, sale_id):
 
     if sale.status != CajaSale.Status.PENDING:
         return JsonResponse({'error': 'La venta no está pendiente'}, status=400)
-
-    if sale.mp_order_id:
-        try:
-            cancel_order(sale.mp_order_id)
-        except MercadoPagoInStoreError as exc:
-            logger.warning('MP cancel error for sale %s: %s', sale.id, exc)
 
     sale.status = CajaSale.Status.CANCELLED
     sale.save(update_fields=['status', 'updated_at'])

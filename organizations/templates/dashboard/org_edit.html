@@ -28,24 +28,5 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card mb-3">
-            <div class="card-header">MercadoPago</div>
-            <div class="card-body">
-                {% if organization.mp_connected %}
-                    <span class="badge bg-success mb-2"><i class="fa-solid fa-check"></i> Cuenta conectada</span>
-                    <p class="text-muted small mb-0">Usuario MP: {{ organization.mp_user_id }}</p>
-                {% else %}
-                    <span class="badge bg-warning text-dark mb-2">Sin cuenta conectada</span>
-                {% endif %}
-                <div class="mt-2">
-                    <a href="{% url 'dashboard_mp_connect' org_slug=organization.slug %}" class="btn btn-sm btn-outline-primary w-100">
-                        Gestionar MercadoPago
-                    </a>
-                </div>
-            </div>
-        </div>
-
-    </div>
 </div>
 {% endblock %}

@@ -4,8 +4,6 @@ from caja.views import (
     api_cancel_sale,
     api_cancel_paid_sale,
     api_create_sale,
-    api_pay_mp_point,
-    api_pay_mp_qr,
     api_sale_status,
     caja_edit_view,
     caja_events_v2_view,
@@ -68,16 +66,6 @@ urlpatterns = [
         'mis-eventos/<slug:event_slug>/cajas-v2/<int:caja_id>/api/sales/',
         api_create_sale,
         name='caja_v2_api_create_sale',
-    ),
-    path(
-        'mis-eventos/<slug:event_slug>/cajas-v2/<int:caja_id>/api/sales/<int:sale_id>/pay/mp-qr/',
-        api_pay_mp_qr,
-        name='caja_v2_api_pay_mp_qr',
-    ),
-    path(
-        'mis-eventos/<slug:event_slug>/cajas-v2/<int:caja_id>/api/sales/<int:sale_id>/pay/mp-point/',
-        api_pay_mp_point,
-        name='caja_v2_api_pay_mp_point',
     ),
     path(
         'mis-eventos/<slug:event_slug>/cajas-v2/<int:caja_id>/api/sales/<int:sale_id>/status/',

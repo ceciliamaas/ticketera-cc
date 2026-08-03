@@ -174,8 +174,6 @@ class Order(BaseModel):
         LOCAL_TRANSFER = 'LOCAL_TRANSFER', 'Transferencia Local'
         ONLINE_PURCHASE = 'ONLINE_PURCHASE', 'Compra Online'
         CASH_ONSITE = 'CASH_ONSITE', 'Efectivo'
-        MP_QR_CAJA = 'MP_QR_CAJA', 'Mercado Pago QR (Caja)'
-        MP_POINT_CAJA = 'MP_POINT_CAJA', 'Mercado Pago Postnet (Caja)'
         OTHER = 'OTHER', 'Otro'
 
     key = models.UUIDField(default=uuid.uuid4, editable=False)
@@ -218,7 +216,6 @@ class Order(BaseModel):
     
     processor_callback = models.JSONField(null=True, blank=True, help_text="Payment processor callback data")
     net_received_amount = models.DecimalField(decimal_places=2, max_digits=10, null=True, blank=True, help_text="Net amount received after fees")
-    mp_preference_id = models.CharField(max_length=200, blank=True, default='', help_text="Cached MercadoPago preference ID")
 
     class Meta:
         permissions = [
@@ -288,39 +285,6 @@ class Order(BaseModel):
 
         send_mail(**kwargs)
         logging.info(f'Order {self.id} confirmation email sent')
-
-    def get_payment_preference(self):
-        org = self.event.organization if self.event and self.event.organization else None
-        import mercadopago
-        access_token = (
-            org.mp_access_token
-            if org and org.mp_connected
-            else settings.MERCADOPAGO['ACCESS_TOKEN']
-        )
-        sdk = mercadopago.SDK(access_token)
-
-        items = []
-
-        preference_data = {
-            "items": items,
-            "payer": {
-                "name": self.first_name,
-                "surname": self.last_name,
-                "email": self.email,
-                "identification": {"type": "DNI", "number": self.dni},
-            },
-            "back_urls": {
-                "success": settings.APP_URL + reverse("payment_success_callback", kwargs={'order_key': self.key}),
-                "failure": settings.APP_URL + reverse("payment_failure_callback", kwargs={'order_key': self.key}),
-                "pending": settings.APP_URL + reverse("payment_pending_callback", kwargs={'order_key': self.key})
-            },
-            "notification_url": settings.APP_URL + reverse("mercadopago_webhook"),
-            "statement_descriptor": self.event.organization.name if self.event and self.event.organization else self.event.name if self.event else "Ticketera",
-            "external_reference": str(self.key),
-        }
-
-        response = sdk.preference().create(preference_data)['response']
-        return response
 
     def __str__(self):
         return f'Order #{self.pk}  {self.last_name} - {self.email} - {self.status} - {self.amount}'

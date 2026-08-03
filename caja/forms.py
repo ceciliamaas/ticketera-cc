@@ -3,7 +3,7 @@ from decimal import Decimal
 from django import forms
 from django.forms import ModelForm
 
-from caja.models import EventCaja, EventCajaMercadoPagoConfig, EventProduct
+from caja.models import EventCaja, EventProduct
 from tickets.models import TicketType
 
 
@@ -129,25 +129,6 @@ class EventCajaCreateForm(ModelForm):
         fields = ['name']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la caja'}),
-        }
-
-
-class EventCajaMercadoPagoConfigForm(ModelForm):
-    class Meta:
-        model = EventCajaMercadoPagoConfig
-        fields = [
-            'external_store_id',
-            'external_pos_id',
-            'store_id',
-            'pos_id',
-            'terminal_id',
-        ]
-        widgets = {
-            'external_store_id': forms.TextInput(attrs={'class': 'form-control'}),
-            'external_pos_id': forms.TextInput(attrs={'class': 'form-control'}),
-            'store_id': forms.NumberInput(attrs={'class': 'form-control'}),
-            'pos_id': forms.NumberInput(attrs={'class': 'form-control'}),
-            'terminal_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'NEWLAND_N950__...'}),
         }
 
 

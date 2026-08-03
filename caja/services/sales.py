@@ -245,13 +245,6 @@ def create_pending_sale(event_caja, sold_by, payment_method, lines_data, custome
     if not sale_lines:
         raise ValueError('Debe seleccionar al menos un producto')
 
-    if payment_method == CajaSale.PaymentMethod.MP_QR:
-        from caja.mercadopago_instore import MP_QR_MIN_AMOUNT
-        if total < MP_QR_MIN_AMOUNT:
-            raise ValueError(
-                f'El monto mínimo para cobrar con MP QR es ${MP_QR_MIN_AMOUNT:.0f}',
-            )
-
     if has_ticket_products:
         _validate_ticket_sale_requirements(
             [type('Line', (), {'event_product': p})() for p, _, _ in sale_lines if p.is_ticket_product],

@@ -215,19 +215,6 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )
 
-_MP_TEST_MODE = os.environ.get('MERCADOPAGO_TEST_MODE', 'False') == 'True'
-_MP_SUFFIX = '_TEST' if _MP_TEST_MODE else ''
-
-MERCADOPAGO = {
-    'PUBLIC_KEY': os.environ.get(f'MERCADOPAGO_PUBLIC_KEY{_MP_SUFFIX}'),
-    'ACCESS_TOKEN': os.environ.get(f'MERCADOPAGO_ACCESS_TOKEN{_MP_SUFFIX}'),
-    'WEBHOOK_SECRET': os.environ.get(f'MERCADOPAGO_WEBHOOK_SECRET{_MP_SUFFIX}'),
-    'COLLECTOR_USER_ID': os.environ.get('MERCADOPAGO_COLLECTOR_USER_ID'),
-    'TEST_MODE': _MP_TEST_MODE,
-    'APP_ID': os.environ.get('MERCADOPAGO_APP_ID'),
-    'CLIENT_SECRET': os.environ.get('MERCADOPAGO_CLIENT_SECRET'),
-}
-
 SEDE_SUBSCRIPTION_PLAN_IDS = [
     plan_id.strip()
     for plan_id in os.environ.get('SUBS_IDS', '').split(',')

@@ -18,17 +18,14 @@ from caja.forms import (
     EventProductForm,
     StockQuantityForm,
 )
-from caja.mercadopago_instore import MercadoPagoInStoreError, iter_terminals
 from caja.models import (
     CajaSale,
     EventCaja,
-    EventCajaMercadoPagoConfig,
     EventCajaProduct,
     EventProduct,
     EventProductStockRecord,
 )
 from caja.permissions import get_event_for_admin, get_event_for_caja, user_has_caja_access
-from caja.services.mercadopago_setup import ensure_mp_qr_config, terminal_linked_cajas
 from caja.stock import adjust_stock, available, ensure_stock_row, initialize_product_stock, set_unlimited
 from events.models import Event
 
@@ -159,18 +156,7 @@ def cajas_list_view(request, event_slug):
             caja = form.save(commit=False)
             caja.event = event
             caja.save()
-            EventCajaMercadoPagoConfig.objects.create(event_caja=caja)
-            try:
-                ensure_mp_qr_config(caja, event, force=True)
-                messages.success(
-                    request,
-                    f'Caja "{caja.name}" creada. QR de Mercado Pago listo para usar.',
-                )
-            except MercadoPagoInStoreError as exc:
-                messages.warning(
-                    request,
-                    f'Caja "{caja.name}" creada, pero no se pudo configurar el QR automáticamente: {exc}',
-                )
+            messages.success(request, f'Caja "{caja.name}" creada.')
             return redirect('caja_v2_edit', event_slug=event.slug, caja_id=caja.id)
         for field, errors in form.errors.items():
             for error in errors:
@@ -187,7 +173,6 @@ def cajas_list_view(request, event_slug):
 def caja_edit_view(request, event_slug, caja_id):
     event = get_event_for_admin(request.user, event_slug)
     caja = get_object_or_404(EventCaja, id=caja_id, event=event)
-    mp_config, _ = EventCajaMercadoPagoConfig.objects.get_or_create(event_caja=caja)
     active_products = list(
         EventProduct.objects.filter(event=event, is_active=True)
         .select_related('ticket_type')
@@ -226,75 +211,11 @@ def caja_edit_view(request, event_slug, caja_id):
                     )
             messages.success(request, 'Productos de la caja actualizados.')
             return redirect('caja_v2_edit', event_slug=event.slug, caja_id=caja.id)
-        elif action == 'link_terminal':
-            terminal_id = request.POST.get('terminal_id', '').strip()
-            if not terminal_id:
-                messages.error(request, 'Terminal inválido.')
-            else:
-                other = terminal_linked_cajas(exclude_caja_id=caja.id)
-                if terminal_id in other:
-                    messages.error(
-                        request,
-                        f'Ese Point Smart ya está vinculado a la caja "{other[terminal_id].name}".',
-                    )
-                else:
-                    mp_config.terminal_id = terminal_id
-                    pos_id = request.POST.get('terminal_pos_id')
-                    store_id = request.POST.get('terminal_store_id')
-                    if pos_id:
-                        try:
-                            mp_config.pos_id = int(pos_id)
-                        except (TypeError, ValueError):
-                            pass
-                    if store_id:
-                        try:
-                            mp_config.store_id = int(store_id)
-                        except (TypeError, ValueError):
-                            pass
-                    mp_config.save()
-                    messages.success(request, 'Point Smart vinculado a esta caja.')
-            return redirect('caja_v2_edit', event_slug=event.slug, caja_id=caja.id)
-        elif action == 'unlink_terminal':
-            mp_config.terminal_id = ''
-            mp_config.save(update_fields=['terminal_id', 'updated_at'])
-            messages.success(request, 'Point Smart desvinculado.')
-            return redirect('caja_v2_edit', event_slug=event.slug, caja_id=caja.id)
-        elif action == 'refresh_mp_qr':
-            try:
-                ensure_mp_qr_config(caja, event, force=True)
-                messages.success(request, 'QR de Mercado Pago configurado correctamente.')
-            except MercadoPagoInStoreError as exc:
-                messages.error(request, f'No se pudo configurar el QR: {exc}')
-            return redirect('caja_v2_edit', event_slug=event.slug, caja_id=caja.id)
-
-    mp_config.refresh_from_db()
-
-    mp_terminals = []
-    terminals_error = None
-    try:
-        mp_terminals = list(iter_terminals())
-    except MercadoPagoInStoreError as exc:
-        terminals_error = str(exc)
-
-    linked_elsewhere = terminal_linked_cajas(exclude_caja_id=caja.id)
-    terminal_rows = []
-    for terminal in mp_terminals:
-        tid = terminal.get('id', '')
-        terminal_rows.append({
-            'terminal': terminal,
-            'linked_caja': linked_elsewhere.get(tid),
-            'is_current': mp_config.terminal_id == tid,
-        })
 
     context = mi_fuego_admin_context(request, event, f'cajas_v2_{event.slug}')
     context.update({
         'caja': caja,
         'caja_form': EventCajaForm(instance=caja),
-        'mp_config': mp_config,
-        'mp_qr_ready': mp_config.qr_ready,
-        'mp_point_ready': mp_config.point_ready,
-        'terminal_rows': terminal_rows,
-        'terminals_error': terminals_error,
         'active_products': active_products,
         'all_products': active_products,
         'ticket_products': ticket_products,
