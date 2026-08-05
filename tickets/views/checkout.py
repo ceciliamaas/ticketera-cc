@@ -390,8 +390,11 @@ def order_summary(request, event_slug=None):
                 'error_message': 'No se pudo iniciar el proceso de pago. Intentá nuevamente en unos minutos.',
             })
 
-        # Always use init_point — sandbox_init_point causes redirect loops in MP sandbox
-        init_point = preference.get('init_point')
+        # Use sandbox_init_point in test mode, init_point in production
+        if settings.MERCADOPAGO.get('TEST_MODE'):
+            init_point = preference.get('sandbox_init_point') or preference.get('init_point')
+        else:
+            init_point = preference.get('init_point')
         return redirect(init_point)
 
     return render(request, 'checkout/order_summary.html', {
