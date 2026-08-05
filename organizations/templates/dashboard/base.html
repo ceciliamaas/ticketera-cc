@@ -26,6 +26,21 @@
     </div>
 </nav>
 <div class="container mt-4">
+    {% if organization and organization.mp_connected %}
+        {% with days=organization.mp_days_until_expiry %}
+            {% if days is not None and days <= 30 %}
+                <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div>
+                        Tu conexión con MercadoPago <strong>vence en {{ days }} día{{ days|pluralize }}</strong>.
+                        Reconectá tu cuenta para evitar interrupciones en el cobro de entradas.
+                        <a href="{% url 'dashboard_mp_oauth_start' org_slug=organization.slug %}" class="alert-link ms-2">Reconectar ahora</a>
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                </div>
+            {% endif %}
+        {% endwith %}
+    {% endif %}
     {% for message in messages %}
         <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
             {{ message }}

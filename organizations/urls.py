@@ -19,4 +19,9 @@ urlpatterns = [
     path('o/<slug:org_slug>/invitations/<int:invitation_id>/cancel/', views.dashboard_invitation_cancel, name='dashboard_invitation_cancel'),
     # Organisation settings
     path('o/<slug:org_slug>/settings/', views.dashboard_org_edit, name='dashboard_org_edit'),
+    # MercadoPago Marketplace OAuth
+    path('o/<slug:org_slug>/mercadopago/', views.dashboard_mp_connect, name='dashboard_mp_connect'),
+    path('o/<slug:org_slug>/mercadopago/connect/', views.dashboard_mp_oauth_start, name='dashboard_mp_oauth_start'),
+    path('o/<slug:org_slug>/mercadopago/disconnect/', views.dashboard_mp_disconnect, name='dashboard_mp_disconnect'),
+    path('mp/callback/', views.dashboard_mp_callback, name='dashboard_mp_callback'),
 ]

@@ -1,11 +1,16 @@
 import logging
+import urllib.parse
 
+import requests
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.contrib.auth.models import User
 from django.db import models
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from django.utils.text import slugify
@@ -372,9 +377,21 @@ def dashboard_event_set_status(request, org_slug, event_id):
 def dashboard_event_publish(request, org_slug, event_id):
     organization = get_authorized_organization(request.user, org_slug, min_role='admin')
     event = get_object_or_404(Event, pk=event_id, organization=organization)
+
+    # Block publishing paid events if the org has no connected MP account
+    from tickets.models import TicketType
+    has_paid_tickets = TicketType.objects.filter(event=event, price__gt=0).exists()
+    if has_paid_tickets and not organization.mp_connected:
+        messages.error(
+            request,
+            'Para publicar eventos con entradas pagas, primero conectá tu cuenta de MercadoPago '
+            'en Configuración → MercadoPago.',
+        )
+        return redirect('dashboard_event_list', org_slug=org_slug)
+
     event.status = Event.Status.PUBLISHED
     event.save(update_fields=['status'])
-    messages.success(request, f'"{event.name}" is now published.')
+    messages.success(request, f'"{event.name}" publicado.')
     return redirect('dashboard_event_list', org_slug=org_slug)
 
 
@@ -475,3 +492,156 @@ def dashboard_org_edit(request, org_slug):
     else:
         form = OrganizationForm(instance=organization)
     return render(request, 'dashboard/org_edit.html', {'organization': organization, 'form': form})
+
+
+# ── MercadoPago Marketplace OAuth ────────────────────────────────────────────
+
+def _refresh_mp_token(org):
+    """
+    Silently refresh the org's MP access token using the refresh_token.
+    Called lazily before creating a preference when expiry is within 7 days.
+    Returns True if refreshed successfully, False otherwise.
+    """
+    if not org.mp_refresh_token:
+        return False
+    try:
+        resp = requests.post(
+            'https://api.mercadopago.com/oauth/token',
+            json={
+                'client_id': settings.MERCADOPAGO['APP_ID'],
+                'client_secret': settings.MERCADOPAGO['CLIENT_SECRET'],
+                'grant_type': 'refresh_token',
+                'refresh_token': org.mp_refresh_token,
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as exc:
+        logger.error('MP token refresh failed for org %s: %s', org.slug, exc)
+        return False
+
+    from datetime import timedelta
+    org.mp_access_token = data['access_token']
+    org.mp_refresh_token = data.get('refresh_token', org.mp_refresh_token)
+    org.mp_public_key = data.get('public_key', org.mp_public_key)
+    org.mp_token_expires_at = timezone.now() + timedelta(seconds=data.get('expires_in', 15552000))
+    org.save(update_fields=['mp_access_token', 'mp_refresh_token', 'mp_public_key', 'mp_token_expires_at'])
+    logger.info('MP token refreshed for org %s, expires %s', org.slug, org.mp_token_expires_at)
+    return True
+
+
+@login_required
+def dashboard_mp_connect(request, org_slug):
+    """Show MP connection status for the organisation."""
+    organization = get_authorized_organization(request.user, org_slug, min_role='admin')
+    days_until_expiry = organization.mp_days_until_expiry()
+    return render(request, 'dashboard/mp_connect.html', {
+        'organization': organization,
+        'days_until_expiry': days_until_expiry,
+        'expiry_warning': days_until_expiry is not None and days_until_expiry <= 30,
+    })
+
+
+@login_required
+def dashboard_mp_oauth_start(request, org_slug):
+    """Redirect admin to MercadoPago OAuth authorization page."""
+    organization = get_authorized_organization(request.user, org_slug, min_role='admin')
+    app_id = settings.MERCADOPAGO.get('APP_ID')
+    if not app_id:
+        messages.error(request, 'MERCADOPAGO_APP_ID no está configurado en el servidor.')
+        return redirect('dashboard_mp_connect', org_slug=org_slug)
+
+    callback_url = settings.APP_URL.rstrip('/') + reverse('dashboard_mp_callback')
+    params = urllib.parse.urlencode({
+        'client_id': app_id,
+        'response_type': 'code',
+        'platform_id': 'mp',
+        'redirect_uri': callback_url,
+        'state': org_slug,
+    })
+    return redirect(f'https://auth.mercadopago.com/authorization?{params}')
+
+
+def dashboard_mp_callback(request):
+    """Handle OAuth callback from MercadoPago — exchange code for tokens and fetch account info."""
+    code = request.GET.get('code')
+    org_slug = request.GET.get('state')
+
+    if not code or not org_slug:
+        messages.error(request, 'OAuth callback inválido.')
+        return redirect('dashboard_home')
+
+    organization = get_object_or_404(Organization, slug=org_slug)
+    callback_url = settings.APP_URL.rstrip('/') + reverse('dashboard_mp_callback')
+
+    # Exchange authorization code for tokens
+    try:
+        resp = requests.post(
+            'https://api.mercadopago.com/oauth/token',
+            json={
+                'client_id': settings.MERCADOPAGO['APP_ID'],
+                'client_secret': settings.MERCADOPAGO['CLIENT_SECRET'],
+                'code': code,
+                'grant_type': 'authorization_code',
+                'redirect_uri': callback_url,
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as exc:
+        logger.error('MP OAuth token exchange failed for org %s: %s', org_slug, exc)
+        messages.error(request, f'Error al conectar con MercadoPago: {exc}')
+        return redirect('dashboard_mp_connect', org_slug=org_slug)
+
+    from datetime import timedelta
+    access_token = data['access_token']
+    user_id = str(data.get('user_id', ''))
+
+    # Fetch seller account info (nickname/alias) using the new access token
+    mp_nickname = ''
+    try:
+        user_resp = requests.get(
+            f'https://api.mercadolibre.com/users/{user_id}',
+            headers={'Authorization': f'Bearer {access_token}'},
+            timeout=10,
+        )
+        user_resp.raise_for_status()
+        user_data = user_resp.json()
+        mp_nickname = user_data.get('nickname', '') or user_data.get('email', '')
+    except Exception as exc:
+        logger.warning('Could not fetch MP user info for org %s: %s', org_slug, exc)
+
+    organization.mp_access_token = access_token
+    organization.mp_refresh_token = data.get('refresh_token', '')
+    organization.mp_public_key = data.get('public_key', '')
+    organization.mp_user_id = user_id
+    organization.mp_nickname = mp_nickname
+    organization.mp_token_expires_at = timezone.now() + timedelta(seconds=data.get('expires_in', 15552000))
+    organization.save(update_fields=[
+        'mp_access_token', 'mp_refresh_token', 'mp_public_key',
+        'mp_user_id', 'mp_nickname', 'mp_token_expires_at',
+    ])
+
+    messages.success(request, f'Cuenta de MercadoPago conectada correctamente ({mp_nickname or user_id}).')
+    return redirect('dashboard_mp_connect', org_slug=org_slug)
+
+
+@login_required
+@require_POST
+def dashboard_mp_disconnect(request, org_slug):
+    """Remove stored MP credentials for an organization."""
+    organization = get_authorized_organization(request.user, org_slug, min_role='admin')
+    organization.mp_access_token = ''
+    organization.mp_refresh_token = ''
+    organization.mp_public_key = ''
+    organization.mp_user_id = ''
+    organization.mp_nickname = ''
+    organization.mp_token_expires_at = None
+    organization.save(update_fields=[
+        'mp_access_token', 'mp_refresh_token', 'mp_public_key',
+        'mp_user_id', 'mp_nickname', 'mp_token_expires_at',
+    ])
+    messages.success(request, 'Cuenta de MercadoPago desconectada.')
+    return redirect('dashboard_mp_connect', org_slug=org_slug)

@@ -28,5 +28,31 @@
             </div>
         </div>
     </div>
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header"><i class="fa-solid fa-credit-card me-1"></i>MercadoPago</div>
+            <div class="card-body">
+                {% if organization.mp_connected %}
+                    <span class="badge bg-success mb-1"><i class="fa-solid fa-check"></i> Conectada</span>
+                    <p class="fw-semibold mb-0">{{ organization.mp_nickname }}</p>
+                    <p class="text-muted small mb-2">ID: {{ organization.mp_user_id }}</p>
+                    {% with days=organization.mp_days_until_expiry %}
+                        {% if days is not None and days <= 30 %}
+                            <p class="text-warning small mb-2">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Vence en {{ days }} día{{ days|pluralize }}
+                            </p>
+                        {% endif %}
+                    {% endwith %}
+                {% else %}
+                    <span class="badge bg-secondary mb-2">Sin cuenta conectada</span>
+                    <p class="text-muted small mb-2">Necesaria para eventos con entradas pagas.</p>
+                {% endif %}
+                <a href="{% url 'dashboard_mp_connect' org_slug=organization.slug %}" class="btn btn-sm btn-outline-primary w-100">
+                    Gestionar MercadoPago
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

@@ -114,6 +114,44 @@ def payment_pending(request, order_key):
 def payment_notification(request):
     return HttpResponse('OK')
 
+def _try_confirm_via_mp_api(order):
+    """Fallback: query MP merchant_orders API and confirm if payment is approved."""
+    from django.conf import settings
+    import mercadopago
+
+    access_token = settings.MERCADOPAGO.get('ACCESS_TOKEN')
+    if not access_token:
+        return
+
+    try:
+        sdk = mercadopago.SDK(access_token)
+        result = sdk.merchant_order().search({'external_reference': str(order.key)})
+        elements = result.get('response', {}).get('elements', [])
+    except Exception as exc:
+        logging.warning('check_order_status MP fallback error: %s', exc)
+        return
+
+    for mo in elements:
+        for payment in mo.get('payments', []):
+            if payment.get('status') == 'approved':
+                from django.db import transaction
+                from tickets.processing import mint_tickets
+                net = payment.get('transaction_details', {}).get('net_received_amount')
+                with transaction.atomic():
+                    locked = Order.objects.select_for_update().filter(
+                        key=order.key, status=Order.OrderStatus.PENDING
+                    ).first()
+                    if not locked:
+                        return
+                    locked.processor_callback = payment
+                    if net is not None:
+                        locked.net_received_amount = net
+                    locked.save(update_fields=['processor_callback', 'net_received_amount'])
+                    mint_tickets(locked)
+                    logging.info('check_order_status: order %s confirmed via MP fallback poll', order.key)
+                return
+
+
 @login_required
 def check_order_status(request, order_key):
     try:
@@ -123,6 +161,13 @@ def check_order_status(request, order_key):
 
     if order.email != request.user.email:
         return HttpResponseForbidden('Forbidden')
+
+    # If still pending, try to confirm via MP API (fallback for missed webhooks)
+    if order.status == Order.OrderStatus.PENDING:
+        order.refresh_from_db()  # re-read in case webhook arrived between requests
+        if order.status == Order.OrderStatus.PENDING:
+            _try_confirm_via_mp_api(order)
+            order.refresh_from_db()
 
     payload = {"status": order.status}
     if order.status == Order.OrderStatus.CONFIRMED:
@@ -151,6 +196,11 @@ def checkout_payment_callback(request, order_key):
     request.session.pop('donations', None)
     request.session.pop('order_sid', None)
 
+    order = Order.objects.filter(key=order_key).first()
+    mp_status = request.GET.get('status') or request.GET.get('collection_status', '')
+
     return render(request, 'checkout/payment_callback.html', {
         'order_key': order_key,
+        'order': order,
+        'mp_status': mp_status,
     })

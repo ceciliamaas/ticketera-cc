@@ -199,11 +199,12 @@ def order_summary(request, event_slug=None):
                 'original_price': price,
             })
             items.append({
-                "id": ticket_type.name,
+                "id": str(ticket_type.id),
                 "title": ticket_type.name,
-                "description": ticket_type.description,
-                "quantity": quantity,
+                "description": (ticket_type.description or ticket_type.name)[:256],
+                "quantity": int(quantity),
                 "unit_price": float(effective_price),
+                "currency_id": "ARS",
             })
 
     donation_data = []
@@ -223,7 +224,8 @@ def order_summary(request, event_slug=None):
                 "id": donation_type,
                 "title": donation_name,
                 "quantity": 1,
-                "unit_price": donation_amount,
+                "unit_price": float(donation_amount),
+                "currency_id": "ARS",
             })
 
     # Get terms and conditions for the event
@@ -309,10 +311,88 @@ def order_summary(request, event_slug=None):
                         defaults={'order': acceptance.order}
                     )
 
-        # Confirm immediately — no payment gateway
-        from tickets.processing import mint_tickets
-        mint_tickets(order)
-        return redirect(reverse('checkout_payment_callback', kwargs={'order_key': order.key}))
+        if total_amount == 0:
+            # Free order — confirm immediately without a payment gateway
+            from tickets.processing import mint_tickets
+            mint_tickets(order)
+            return redirect(reverse('checkout_payment_callback', kwargs={'order_key': order.key}))
+
+        # Paid order — create MercadoPago preference and redirect buyer
+        import mercadopago
+        from django.conf import settings
+
+        org = event.organization if event and event.organization else None
+
+        # In TEST_MODE use the platform's test credentials to avoid prod/test mismatch.
+        # In production use the org's OAuth token so payments go to their account.
+        if settings.MERCADOPAGO.get('TEST_MODE'):
+            sdk = mercadopago.SDK(settings.MERCADOPAGO['ACCESS_TOKEN'])
+            marketplace_fee = 0  # no marketplace split in test mode
+        else:
+            if not org or not org.mp_connected:
+                order.status = 'CANCELLED'
+                order.save(update_fields=['status'])
+                return render(request, 'checkout/order_summary.html', {
+                    'ticket_data': ticket_data,
+                    'donation_data': donation_data,
+                    'total_amount': total_amount,
+                    'terms_and_conditions': terms_and_conditions,
+                    'current_event': event,
+                    'error_message': 'Este evento no tiene una cuenta de pago configurada. Por favor contactá al organizador.',
+                })
+            # Lazily refresh token if near expiry
+            from organizations.views import _refresh_mp_token
+            days = org.mp_days_until_expiry()
+            if days is not None and days <= 7:
+                _refresh_mp_token(org)
+                org.refresh_from_db()
+            sdk = mercadopago.SDK(org.mp_access_token)
+            marketplace_fee = org.mp_marketplace_fee_for(total_amount)
+
+        callback_base = settings.APP_URL.rstrip('/')
+        preference_data = {
+            'items': items,
+            'payer': {
+                'name': request.user.first_name or '',
+                'surname': request.user.last_name or '',
+                'email': request.user.email,
+            },
+            'back_urls': {
+                'success': f"{callback_base}{reverse('checkout_payment_callback', kwargs={'order_key': order.key})}",
+                'failure': f"{callback_base}{reverse('checkout_payment_callback', kwargs={'order_key': order.key})}",
+                'pending': f"{callback_base}{reverse('checkout_payment_callback', kwargs={'order_key': order.key})}",
+            },
+            'auto_return': 'approved',
+            'notification_url': f"{callback_base}{reverse('mercadopago_webhook')}",
+            'external_reference': str(order.key),
+            'statement_descriptor': (org.name or event.name)[:22],
+        }
+        fee = marketplace_fee
+        if fee:
+            preference_data['marketplace_fee'] = fee
+
+        try:
+            mp_response = sdk.preference().create(preference_data)
+            preference = mp_response['response']
+            import logging
+            logging.info('MP preference created: id=%s status=%s', preference.get('id'), mp_response.get('status'))
+        except Exception as exc:
+            import logging
+            logging.error('MP preference creation failed for order %s: %s', order.key, exc)
+            order.status = 'CANCELLED'
+            order.save(update_fields=['status'])
+            return render(request, 'checkout/order_summary.html', {
+                'ticket_data': ticket_data,
+                'donation_data': donation_data,
+                'total_amount': total_amount,
+                'terms_and_conditions': terms_and_conditions,
+                'current_event': event,
+                'error_message': 'No se pudo iniciar el proceso de pago. Intentá nuevamente en unos minutos.',
+            })
+
+        # Always use init_point — sandbox_init_point causes redirect loops in MP sandbox
+        init_point = preference.get('init_point')
+        return redirect(init_point)
 
     return render(request, 'checkout/order_summary.html', {
         'ticket_data': ticket_data,

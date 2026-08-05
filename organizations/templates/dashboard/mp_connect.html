@@ -1,0 +1,70 @@
+{% extends "dashboard/base.html" %}
+{% block title %}MercadoPago — {{ organization.name }}{% endblock %}
+{% block content %}
+<h2 class="mb-4">MercadoPago — {{ organization.name }}</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="fa-solid fa-credit-card"></i> Cuenta de MercadoPago
+            </div>
+            <div class="card-body">
+
+                {% if organization.mp_connected %}
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="badge bg-success fs-6"><i class="fa-solid fa-check me-1"></i>Conectada</span>
+                    </div>
+
+                    <p class="mb-1 fw-semibold fs-5">{{ organization.mp_nickname }}</p>
+                    <p class="text-muted small mb-3">ID de usuario: {{ organization.mp_user_id }}</p>
+
+                    {% if expiry_warning %}
+                        <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <div>
+                                Tu token vence en <strong>{{ days_until_expiry }} día{{ days_until_expiry|pluralize }}</strong>.
+                                Reconectá tu cuenta para evitar interrupciones en el cobro.
+                            </div>
+                        </div>
+                    {% else %}
+                        {% if days_until_expiry is not None %}
+                            <p class="text-muted small mb-3">Conexión válida por {{ days_until_expiry }} día{{ days_until_expiry|pluralize }} más.</p>
+                        {% endif %}
+                    {% endif %}
+
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'dashboard_mp_oauth_start' org_slug=organization.slug %}"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fa-solid fa-rotate me-1"></i>Reconectar
+                        </a>
+                        <form method="post" action="{% url 'dashboard_mp_disconnect' org_slug=organization.slug %}"
+                              onsubmit="return confirm('¿Desconectar la cuenta de MercadoPago? Los eventos con entradas pagas pasarán a borrador.')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="fa-solid fa-link-slash me-1"></i>Desconectar
+                            </button>
+                        </form>
+                    </div>
+
+                {% else %}
+                    <span class="badge bg-secondary mb-3">Sin cuenta conectada</span>
+                    <p class="text-muted mb-4">
+                        Para publicar eventos con entradas pagas necesitás conectar tu cuenta de MercadoPago.
+                        Los eventos gratuitos no requieren conexión.
+                    </p>
+                    <a href="{% url 'dashboard_mp_oauth_start' org_slug=organization.slug %}"
+                       class="btn btn-primary">
+                        <i class="fa-solid fa-link me-1"></i>Conectar cuenta de MercadoPago
+                    </a>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<a href="{% url 'dashboard_org_edit' org_slug=organization.slug %}" class="btn btn-outline-secondary btn-sm">
+    <i class="fa-solid fa-arrow-left me-1"></i>Volver a Configuración
+</a>
+{% endblock %}

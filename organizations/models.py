@@ -28,6 +28,37 @@ class Organization(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # MercadoPago Marketplace credentials (obtained via OAuth)
+    mp_access_token = models.CharField(max_length=500, blank=True, help_text="Seller access token (obtained via OAuth)")
+    mp_refresh_token = models.CharField(max_length=500, blank=True, help_text="Token to refresh the access token")
+    mp_public_key = models.CharField(max_length=500, blank=True, help_text="Seller public key")
+    mp_user_id = models.CharField(max_length=100, blank=True, help_text="Seller MercadoPago user ID")
+    mp_nickname = models.CharField(max_length=200, blank=True, help_text="Seller MP alias/nickname (e.g. JUAN.PEREZ)")
+    mp_token_expires_at = models.DateTimeField(null=True, blank=True, help_text="When the access token expires")
+    mp_marketplace_fee_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0,
+        help_text="Marketplace fee percentage (e.g. 5.00 = 5%). Leave at 0 to charge no fee."
+    )
+
+    @property
+    def mp_connected(self):
+        return bool(self.mp_access_token)
+
+    def mp_marketplace_fee_for(self, amount):
+        """Return absolute fee amount for a given payment amount."""
+        if not self.mp_marketplace_fee_pct:
+            return 0
+        from decimal import Decimal
+        return float((Decimal(str(amount)) * self.mp_marketplace_fee_pct / 100).quantize(Decimal('0.01')))
+
+    def mp_days_until_expiry(self):
+        """Returns days until token expires, or None if not connected / no expiry set."""
+        if not self.mp_token_expires_at:
+            return None
+        from django.utils import timezone
+        delta = self.mp_token_expires_at - timezone.now()
+        return delta.days
+
     class Meta:
         ordering = ['name']
         indexes = [
