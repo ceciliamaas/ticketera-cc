@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 @login_required
 def dashboard_home(request):
     """Show orgs the user belongs to; redirect directly if only one."""
+    if request.user.is_superuser:
+        return redirect('dashboard_su_events')
     memberships = request.user.organization_memberships.select_related('organization').filter(
         organization__is_active=True
     )
@@ -479,7 +481,62 @@ def dashboard_member_remove(request, org_slug, membership_id):
 
 # ── Organisation settings ────────────────────────────────────────────────────
 
+def _require_superuser(request):
+    from django.http import HttpResponseForbidden
+    if not request.user.is_superuser:
+        return HttpResponseForbidden('Solo superusuarios pueden acceder.')
+    return None
+
+
 @login_required
+def dashboard_su_events(request):
+    """Superuser: all events across all organisations."""
+    if (denied := _require_superuser(request)):
+        return denied
+    from django.utils import timezone
+    from django.db.models import Q
+    from tickets.models import Order
+    now = timezone.now()
+    all_events = Event.objects.select_related('organization').order_by('-start')
+    upcoming = all_events.filter(Q(end__gte=now) | Q(end__isnull=True, start__gte=now)).exclude(status=Event.Status.CANCELLED)
+    past = all_events.filter(Q(end__lt=now) | Q(end__isnull=True, start__lt=now)).exclude(status=Event.Status.CANCELLED)
+    cancelled = all_events.filter(status=Event.Status.CANCELLED)
+    order_counts = {
+        row['event_id']: row['cnt']
+        for row in Order.objects.values('event_id').annotate(cnt=models.Count('id'))
+    }
+    return render(request, 'dashboard/su_events.html', {
+        'upcoming_events': upcoming,
+        'past_events': past,
+        'cancelled_events': cancelled,
+        'order_counts': order_counts,
+    })
+
+
+@login_required
+def dashboard_su_members(request):
+    """Superuser: all memberships across all organisations."""
+    if (denied := _require_superuser(request)):
+        return denied
+    memberships = OrganizationMembership.objects.select_related('user', 'organization').order_by('organization__name', 'role', 'user__email')
+    return render(request, 'dashboard/su_members.html', {'memberships': memberships})
+
+
+@login_required
+def dashboard_su_settings(request):
+    """Superuser: list all organisations with edit links, plus create new."""
+    if (denied := _require_superuser(request)):
+        return denied
+    organizations = Organization.objects.all().order_by('name')
+    form = OrganizationForm(request.POST or None, request.FILES or None)
+    if request.method == 'POST' and form.is_valid():
+        org = form.save()
+        OrganizationMembership.objects.create(user=request.user, organization=org, role=OrganizationMembership.Role.OWNER)
+        messages.success(request, f'Organización "{org.name}" creada.')
+        return redirect('dashboard_su_settings')
+    return render(request, 'dashboard/su_settings.html', {'organizations': organizations, 'form': form})
+
+
 @login_required
 def dashboard_org_create(request):
     """Superusers only: create a new organisation and become its owner."""
@@ -492,7 +549,7 @@ def dashboard_org_create(request):
             org = form.save()
             OrganizationMembership.objects.create(user=request.user, organization=org, role=OrganizationMembership.Role.OWNER)
             messages.success(request, f'Organización "{org.name}" creada.')
-            return redirect('dashboard_event_list', org_slug=org.slug)
+            return redirect('dashboard_su_settings')
     else:
         form = OrganizationForm()
     return render(request, 'dashboard/org_create.html', {'form': form})

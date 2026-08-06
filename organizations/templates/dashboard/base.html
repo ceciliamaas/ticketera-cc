@@ -13,8 +13,13 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <a class="navbar-brand" href="{% url 'dashboard_home' %}">Dashboard</a>
-        <div class="navbar-nav ms-auto">
-            {% if organization %}
+        <div class="navbar-nav ms-auto align-items-center">
+            {% if request.user.is_superuser %}
+                <span class="badge bg-warning text-dark me-3">Superuser</span>
+                <a class="nav-link" href="{% url 'dashboard_su_events' %}">Eventos</a>
+                <a class="nav-link" href="{% url 'dashboard_su_members' %}">Miembros</a>
+                <a class="nav-link" href="{% url 'dashboard_su_settings' %}">Configuración</a>
+            {% elif organization %}
                 <a class="navbar-brand fw-normal text-light me-3" href="{% url 'dashboard_event_list' org_slug=organization.slug %}">{{ organization.name }}</a>
                 <a class="nav-link" href="{% url 'dashboard_event_list' org_slug=organization.slug %}">Eventos</a>
                 <a class="nav-link" href="{% url 'dashboard_members' org_slug=organization.slug %}">Miembros</a>

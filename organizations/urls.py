@@ -4,6 +4,10 @@ from . import views
 urlpatterns = [
     path('', views.dashboard_home, name='dashboard_home'),
     path('new/', views.dashboard_org_create, name='dashboard_org_create'),
+    # Superuser global views
+    path('su/events/', views.dashboard_su_events, name='dashboard_su_events'),
+    path('su/members/', views.dashboard_su_members, name='dashboard_su_members'),
+    path('su/settings/', views.dashboard_su_settings, name='dashboard_su_settings'),
     path('o/<slug:org_slug>/', views.dashboard_event_list, name='dashboard_event_list'),
     path('o/<slug:org_slug>/events/new/', views.dashboard_event_create, name='dashboard_event_create'),
     path('o/<slug:org_slug>/events/<int:event_id>/edit/', views.dashboard_event_edit, name='dashboard_event_edit'),

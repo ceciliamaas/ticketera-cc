@@ -1,0 +1,39 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Todos los miembros — Superuser{% endblock %}
+{% block content %}
+<h2 class="mb-4">Todos los miembros</h2>
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Organización</th>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Miembro desde</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in memberships %}
+        <tr>
+            <td>
+                <a href="{% url 'dashboard_event_list' org_slug=m.organization.slug %}" class="text-decoration-none">
+                    {{ m.organization.name }}
+                </a>
+            </td>
+            <td>{{ m.user.get_full_name|default:m.user.username }}</td>
+            <td>{{ m.user.email }}</td>
+            <td><span class="badge bg-{% if m.role == 'owner' %}danger{% elif m.role == 'admin' %}primary{% else %}secondary{% endif %}">{{ m.get_role_display }}</span></td>
+            <td>{{ m.created_at|date:"d/m/Y" }}</td>
+            <td>
+                <a href="{% url 'dashboard_members' org_slug=m.organization.slug %}"
+                   class="btn btn-sm btn-outline-secondary">Gestionar</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted">Sin miembros.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

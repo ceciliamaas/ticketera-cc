@@ -18,8 +18,11 @@ def get_authorized_organization(user, organization_slug, min_role=None):
     Return the Organization identified by slug if user has a membership there.
     Raises Http404 if the org doesn't exist or user has no membership.
     Optionally enforce a minimum role: 'admin' or 'owner'.
+    Superusers bypass all membership checks.
     """
     organization = get_object_or_404(Organization, slug=organization_slug, is_active=True)
+    if user.is_superuser:
+        return organization
     membership = get_membership(user, organization)
     if membership is None:
         raise Http404

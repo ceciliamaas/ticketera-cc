@@ -1,0 +1,66 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Configuración — Superuser{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Organizaciones</h2>
+    <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#newOrgForm">
+        <i class="fa-solid fa-plus me-1"></i>Nueva organización
+    </button>
+</div>
+
+<div class="collapse mb-4 {% if form.errors %}show{% endif %}" id="newOrgForm">
+    <div class="card">
+        <div class="card-header">Nueva organización</div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="row">
+                    {% for field in form %}
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="btn btn-primary">Crear organización</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    {% for org in organizations %}
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">{{ org.name }}</h5>
+                    {% if not org.is_active %}
+                        <span class="badge bg-secondary">Inactiva</span>
+                    {% endif %}
+                </div>
+                {% if org.email %}<p class="text-muted small mb-1">{{ org.email }}</p>{% endif %}
+                {% if org.ciudad %}<p class="text-muted small mb-1"><i class="fa-solid fa-location-dot me-1"></i>{{ org.ciudad }}</p>{% endif %}
+                <p class="text-muted small mb-2">
+                    {% if org.mp_connected %}
+                        <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>MP conectado</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Sin MP</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="card-footer d-flex gap-2">
+                <a href="{% url 'dashboard_event_list' org_slug=org.slug %}" class="btn btn-sm btn-outline-primary">Eventos</a>
+                <a href="{% url 'dashboard_org_edit' org_slug=org.slug %}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                <a href="{% url 'dashboard_members' org_slug=org.slug %}" class="btn btn-sm btn-outline-secondary">Miembros</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col"><p class="text-muted">No hay organizaciones todavía.</p></div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "dashboard/base.html" %}
+{% load org_extras %}
+{% block title %}Todos los eventos — Superuser{% endblock %}
+{% block content %}
+<h2 class="mb-4">Todos los eventos</h2>
+
+<h4 class="mt-2 mb-2">Próximos</h4>
+{% if upcoming_events %}
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Organización</th>
+            <th>Estado</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in upcoming_events %}
+        <tr>
+            <td>{{ event.name }}</td>
+            <td><span class="badge bg-secondary">{{ event.organization.name }}</span></td>
+            <td><span class="badge bg-{% if event.status == 'published' %}success{% else %}warning text-dark{% endif %}">{{ event.status }}</span></td>
+            <td>{{ event.start|date:"d/m/Y H:i" }}</td>
+            <td>{{ event.end|date:"d/m/Y H:i" }}</td>
+            <td class="d-flex gap-1 flex-wrap">
+                <a href="{% url 'dashboard_event_edit' org_slug=event.organization.slug event_id=event.pk %}"
+                   class="btn btn-sm btn-outline-primary">Editar</a>
+                <a href="{% url 'dashboard_event_reservas' org_slug=event.organization.slug event_id=event.pk %}"
+                   class="btn btn-sm btn-outline-secondary">Reservas</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-muted">Sin eventos próximos.</p>
+{% endif %}
+
+{% if past_events %}
+<h4 class="mt-5 mb-2">Pasados</h4>
+<table class="table table-hover text-muted">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Organización</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in past_events %}
+        <tr>
+            <td>{{ event.name }}</td>
+            <td><span class="badge bg-secondary">{{ event.organization.name }}</span></td>
+            <td>{{ event.start|date:"d/m/Y H:i" }}</td>
+            <td>{{ event.end|date:"d/m/Y H:i" }}</td>
+            <td>
+                <a href="{% url 'dashboard_event_reservas' org_slug=event.organization.slug event_id=event.pk %}"
+                   class="btn btn-sm btn-outline-secondary">Reservas</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if cancelled_events %}
+<h4 class="mt-5 mb-2">Cancelados</h4>
+<table class="table table-hover text-muted">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Organización</th>
+            <th>Inicio</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in cancelled_events %}
+        <tr>
+            <td>{{ event.name }} <span class="badge bg-danger ms-1">Cancelado</span></td>
+            <td><span class="badge bg-secondary">{{ event.organization.name }}</span></td>
+            <td>{{ event.start|date:"d/m/Y H:i" }}</td>
+            <td>
+                <a href="{% url 'dashboard_event_reservas' org_slug=event.organization.slug event_id=event.pk %}"
+                   class="btn btn-sm btn-outline-secondary">Reservas</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}
