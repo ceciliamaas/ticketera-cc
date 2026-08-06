@@ -480,6 +480,25 @@ def dashboard_member_remove(request, org_slug, membership_id):
 # ── Organisation settings ────────────────────────────────────────────────────
 
 @login_required
+@login_required
+def dashboard_org_create(request):
+    """Superusers only: create a new organisation and become its owner."""
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden('Solo superusuarios pueden crear organizaciones.')
+    if request.method == 'POST':
+        form = OrganizationForm(request.POST, request.FILES)
+        if form.is_valid():
+            org = form.save()
+            OrganizationMembership.objects.create(user=request.user, organization=org, role=OrganizationMembership.Role.OWNER)
+            messages.success(request, f'Organización "{org.name}" creada.')
+            return redirect('dashboard_event_list', org_slug=org.slug)
+    else:
+        form = OrganizationForm()
+    return render(request, 'dashboard/org_create.html', {'form': form})
+
+
+@login_required
 def dashboard_org_edit(request, org_slug):
     """Let org admins edit their organisation's basic details."""
     organization = get_authorized_organization(request.user, org_slug, min_role='admin')

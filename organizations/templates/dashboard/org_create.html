@@ -1,0 +1,31 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Nueva organización{% endblock %}
+{% block content %}
+<h2 class="mb-4">Nueva organización</h2>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Datos de la organización</div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary">Crear organización</button>
+                    <a href="{% url 'dashboard_home' %}" class="btn btn-secondary ms-2">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
