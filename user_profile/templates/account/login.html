@@ -11,25 +11,6 @@
                         No tenés cuenta?
                         <a href="{% url 'account_signup' %}" class="text-primary">Registrate</a>
                     </div>
-                    {% if request.GET.next %}
-                        <a href="{% provider_login_url 'google' next=request.GET.next %}"
-                           class="btn btn-google w-100 d-flex align-items-center justify-content-center">
-                    {% else %}
-                        <a href="{% provider_login_url 'google' %}"
-                           class="btn btn-google w-100 d-flex align-items-center justify-content-center">
-                    {% endif %}
-                        <img src="{% static 'img/google.png' %}"
-                             alt="Google"
-                             class="me-2"
-                             style="width: 20px;
-                                    height: 20px">
-                        <span>Inicia sesión con Google</span>
-                    </a>
-                    <div class="d-flex align-items-center w-100 mb-3">
-                        <div class="flex-grow-1 border-top"></div>
-                        <span class="mx-3">o</span>
-                        <div class="flex-grow-1 border-top"></div>
-                    </div>
                     <form method="post" action="{% url 'account_login' %}" autocomplete="off">
                         {% csrf_token %}
                         {% if request.GET.next %}

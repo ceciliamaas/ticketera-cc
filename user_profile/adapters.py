@@ -3,6 +3,10 @@ from django.urls import reverse
 
 
 class AccountAdapter(DefaultAccountAdapter):
+    def add_message(self, *args, **kwargs):
+        # Suppress allauth's flash messages (logged out, email confirmed, etc.)
+        pass
+
     def save_user(self, request, user, form, commit=True):
         user = super().save_user(request, user, form, commit=commit)
         if commit and user.first_name:

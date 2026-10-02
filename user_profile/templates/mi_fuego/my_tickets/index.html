@@ -1,4 +1,4 @@
-{% extends '../../tickets/barbu_base.html' %}
+{% extends '../../tickets/app_base.html' %}
 {% block page_title %}Mis Tickets{% endblock page_title %}
 {% block menu %}{% endblock menu %}
 {% block innercontent %}
@@ -221,10 +221,10 @@
         }
         
         .menu-section-link.active {
-            background-color: #e9f5f0;
+            background-color: rgba(214, 19, 48, 0.08);
             border-radius: 0.5rem;
             font-weight: 600;
-            color: #289e6d !important;
+            color: var(--color-accent) !important;
         }
         
         .menu-list {
@@ -283,26 +283,26 @@
         }
         
         .menu-link.active {
-            background-color: #e9f5f0;
+            background-color: rgba(214, 19, 48, 0.08);
             border-radius: 0.5rem;
             font-weight: 500;
-            color: #289e6d !important;
+            color: var(--color-accent) !important;
         }
 
         .menu-link-highlight {
-            background: linear-gradient(135deg, #289e6d 0%, #1f7a54 100%);
+            background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-strong) 100%);
             color: #fff !important;
             font-weight: 600;
-            box-shadow: 0 4px 12px rgba(40, 158, 109, 0.25);
+            box-shadow: 0 4px 12px rgba(214, 19, 48, 0.25);
         }
 
         .menu-link-highlight:hover {
-            background: linear-gradient(135deg, #2eb37c 0%, #238a60 100%);
+            background: linear-gradient(135deg, #e61b40 0%, #b10f27 100%);
             color: #fff !important;
         }
 
         .menu-link-highlight.active {
-            background: linear-gradient(135deg, #1f7a54 0%, #176344 100%);
+            background: linear-gradient(135deg, var(--color-accent-strong) 0%, #8d0d22 100%);
             color: #fff !important;
         }
         
@@ -314,10 +314,10 @@
         }
         
         .menu-sublink.active {
-            background-color: #e9f5f0;
+            background-color: rgba(214, 19, 48, 0.08);
             border-radius: 0.25rem;
             font-weight: 500;
-            color: #289e6d !important;
+            color: var(--color-accent) !important;
         }
         
         .menu-link.disabled {

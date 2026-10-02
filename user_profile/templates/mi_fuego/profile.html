@@ -1,4 +1,4 @@
-{% extends "tickets/barbu_base.html" %}
+{% extends "tickets/app_base.html" %}
 {% load static %}
 {% load account %}
 {% load message_filters %}
@@ -70,7 +70,7 @@
     }
     
     .card-header {
-        background: linear-gradient(135deg, #289e6d 0%, #1e7a5a 100%);
+        background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-strong) 100%);
         color: white;
         border: none;
         border-radius: 0.75rem 0.75rem 0 0 !important;
@@ -109,8 +109,8 @@
     }
     
     .form-control:focus {
-        border-color: #289e6d;
-        box-shadow: 0 0 0 0.2rem rgba(40, 158, 109, 0.25);
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 0.2rem rgba(214, 19, 48, 0.18);
     }
     
     .form-label {
@@ -143,24 +143,24 @@
     }
     
     .btn-primary {
-        background: linear-gradient(135deg, #289e6d 0%, #1e7a5a 100%);
+        background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-strong) 100%);
         border: none;
     }
     
     .btn-primary:hover {
-        background: linear-gradient(135deg, #1e7a5a 0%, #155a42 100%);
+        background: linear-gradient(135deg, var(--color-accent-strong) 0%, #9b0f2a 100%);
         transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(40, 158, 109, 0.3);
+        box-shadow: 0 4px 8px rgba(214, 19, 48, 0.25);
     }
     
     .btn-outline-primary {
-        border-color: #289e6d;
-        color: #289e6d;
+        border-color: var(--color-accent);
+        color: var(--color-accent);
     }
     
     .btn-outline-primary:hover {
-        background-color: #289e6d;
-        border-color: #289e6d;
+        background-color: var(--color-accent);
+        border-color: var(--color-accent);
         color: white;
     }
     
@@ -176,13 +176,13 @@
     }
     
     .btn-success {
-        background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+        background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-strong) 100%);
         border: none;
         color: white;
     }
     
     .btn-success:hover {
-        background: linear-gradient(135deg, #146c43 0%, #0f5132 100%);
+        background: linear-gradient(135deg, var(--color-accent-strong) 0%, #9b0f2a 100%);
         color: white;
     }
     
@@ -282,7 +282,7 @@
     }
     
     .iti:focus-within {
-        border-color: #289e6d;
+        border-color: var(--color-accent);
         box-shadow: 0 0 0 0.2rem rgba(40, 158, 109, 0.25);
     }
     
@@ -400,21 +400,6 @@
                                 {% endif %}
                             </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                <label for="{{ profile_form.last_name.id_for_label }}" class="form-label">
-                                    {{ profile_form.last_name.label }}
-                                </label>
-                                {{ profile_form.last_name }}
-                                {% if profile_form.last_name.errors %}
-                                    <div class="text-danger small mt-1">
-                                        {% for error in profile_form.last_name.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                                        </div>
-                            </div>
                         </div>
 
                         <div class="row">

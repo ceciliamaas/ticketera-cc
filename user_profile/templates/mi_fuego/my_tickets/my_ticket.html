@@ -356,7 +356,7 @@
                     {% if not attendee_must_be_registered %}
                         {% if not ticket.is_used %}
                             <div class="d-flex gap-1 align-items-center">
-                                <span class="badge" style="background-color: white !important; color: #198754 !important; border: 1px solid #198754;">Válido</span>
+                                <span class="badge" style="background-color: white !important; color: #d61330 !important; border: 1px solid #d61330;">Válido</span>
                                 {% if ticket.volunteer_ranger or ticket.volunteer_transmutator or ticket.volunteer_umpalumpa or ticket.volunteer_mad %}
                                     {% if ticket.volunteer_ranger %}
                                         <span class="badge" style="font-size: 0.75rem; background-color: #8B4513 !important; color: white !important;">Ranger</span>
@@ -632,8 +632,8 @@
                                             {% else %}
                                                 <span class="badge bg-secondary" style="color: white !important;">Sin vincular</span>
                                                 {% if not my_ticket and not ticket.is_used %}
-                                                    <a class="btn btn-sm btn-outline-success text-success" href="{% url 'assign_ticket' ticket.key %}?next={{ request.get_full_path|urlencode }}" style="color: #198754 !important;">
-                                                        <i class="fas fa-link" style="color: #198754 !important;"></i> Vincular
+                                                    <a class="btn btn-sm btn-outline-success text-success" href="{% url 'assign_ticket' ticket.key %}?next={{ request.get_full_path|urlencode }}" style="color: #d61330 !important;">
+                                                        <i class="fas fa-link" style="color: #d61330 !important;"></i> Vincular
                                                     </a>
                                                 {% endif %}
                                                 {% if attendee_must_be_registered and event.transfers_enabled_until >= now and not ticket.is_used %}
@@ -1264,7 +1264,7 @@ console.error('Error checking for updates:', error);
                     const hasVolunteerRoles = ticket.volunteer_ranger || ticket.volunteer_transmutator || ticket.volunteer_umpalumpa || ticket.volunteer_mad;
                 
                 // Find existing "Válido" badge to avoid recreating it unnecessarily
-                const existingValidBadge = header.querySelector('.badge[style*="color: #198754"], .badge:not([style*="background-color: #8B4513"]):not([style*="background-color: #9370DB"]):not([style*="background-color: #8B0000"]):not(.bg-primary):not(.bg-info):not(.bg-warning):not(.bg-secondary)');
+                const existingValidBadge = header.querySelector('.badge[style*="color: var(--color-accent)"], .badge:not([style*="background-color: #8B4513"]):not([style*="background-color: #9370DB"]):not([style*="background-color: #8B0000"]):not(.bg-primary):not(.bg-info):not(.bg-warning):not(.bg-secondary)');
                 const validBadgeExists = existingValidBadge && existingValidBadge.textContent.trim() === 'Válido';
                 
                 if (isUnassigned) {
@@ -1311,7 +1311,7 @@ console.error('Error checking for updates:', error);
                         // Create "Válido" badge if it doesn't exist
                         const validBadge = document.createElement('span');
                         validBadge.className = 'badge';
-                        validBadge.style.cssText = 'background-color: white !important; color: #198754 !important; border: 1px solid #198754;';
+                        validBadge.style.cssText = 'background-color: white !important; color: var(--color-accent) !important; border: 1px solid var(--color-accent);';
                         validBadge.textContent = 'Válido';
                         
                         // Check if there's already a container with badges
@@ -1352,7 +1352,7 @@ console.error('Error checking for updates:', error);
                             badgeContainer = document.createElement('div');
                             badgeContainer.className = 'd-flex gap-1 align-items-center';
                             // Get the existing "Válido" badge if it exists
-                            const existingValid = header.querySelector('.badge[style*="color: #198754"], .badge:not([style*="background-color: #8B4513"]):not([style*="background-color: #9370DB"]):not([style*="background-color: #8B0000"]):not([style*="background-color: #FF8C00"]):not(.bg-primary):not(.bg-info):not(.bg-warning):not(.bg-secondary)');
+                            const existingValid = header.querySelector('.badge[style*="color: var(--color-accent)"] , .badge:not([style*="background-color: #8B4513"]):not([style*="background-color: #9370DB"]):not([style*="background-color: #8B0000"]):not([style*="background-color: #FF8C00"]):not(.bg-primary):not(.bg-info):not(.bg-warning):not(.bg-secondary)');
                             if (existingValid && existingValid.textContent.trim() === 'Válido') {
                                 // Move existing badge to container
                                 existingValid.remove();

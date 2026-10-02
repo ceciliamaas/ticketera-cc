@@ -16,10 +16,10 @@
           href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css"
           integrity="sha384-h/hnnw1Bi4nbpD6kE7nYfCXzovi622sY5WBxww8ARKwpdLj5kUWjRuyiXaD1U2JT"
           crossorigin="anonymous">
-    <link rel="stylesheet" href="{% static 'css/barbu-style.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/brand.css' %}" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Anton&display=swap"
           rel="stylesheet" />
     <title>
       {% block title %}
@@ -67,8 +67,7 @@
     <header class="w-100 d-flex justify-content-between align-items-center px-4">
       <div class="d-flex align-items-center gap-3">
         <a href="/" class="logo d-flex align-items-center gap-3 text-white text-decoration-none fw-bold fs-5">
-          <i class="fa-solid fa-ticket"></i>
-          <div class="d-none d-sm-block">TICKETERA</div>
+          <img src="{% static 'img/logo-navbar.png' %}" alt="Ticketera" style="height: 32px; width: auto; display: block;">
         </a>
       </div>
       <ul class="nav d-flex flex-row align-items-center flex-nowrap">
@@ -88,8 +87,11 @@
         {% endif %}
         {% if request.user.is_authenticated %}
           {% if user.is_superuser or user.organization_memberships.exists %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'dashboard_home' %}">Dashboard</a>
+          <li class="nav-item no-border">
+            <div class="mode-toggle">
+              <a href="{% url 'dashboard_home' %}">Gestionar</a>
+              <a href="/" class="active">Comprar</a>
+            </div>
           </li>
           {% endif %}
           <li class="nav-item dropdown show">
@@ -219,11 +221,8 @@
     {% endblock full_content %}
     {% block footer %}
     <footer class="w-100 d-flex justify-content-between align-items-center gap-2 py-3 px-4 mt-auto">
-      <div class="d-flex align-items-center gap-2 text-white fw-bold">
-        Loren Ipsum
-      </div>
-      <div class="text-muted small">
-        &copy; {% now "Y" %} Loren Ipsum
+      <div class="d-flex align-items-center gap-2 fw-bold" style="color: #969696; font-family: 'Inter', sans-serif;">
+        GLEYZER PRODUCCIONES
       </div>
     </footer>
     {% endblock footer %}

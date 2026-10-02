@@ -1,4 +1,4 @@
-{% extends 'tickets/barbu_base.html' %}
+{% extends 'tickets/app_base.html' %}
 {% load static %}
 
 {% block title %}Espacio Zen - Reserva de Espacio{% endblock %}
@@ -63,7 +63,7 @@
     @media (min-width: 768px) {
         input[type="date"]:focus,
         input[type="time"]:focus {
-            outline: 2px solid #0d6efd;
+            outline: 2px solid var(--color-accent);
             outline-offset: 2px;
         }
         

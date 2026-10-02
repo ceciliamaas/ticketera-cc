@@ -2,17 +2,15 @@
 {% load org_extras %}
 {% block title %}Eventos — {{ organization.name }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Eventos de {{ organization.name }}</h2>
-    <div class="d-flex gap-2">
-        <a href="{% url 'dashboard_event_create' org_slug=organization.slug %}" class="btn btn-success">
-            + Nuevo evento
-        </a>
-    </div>
+<h2 class="text-center mb-2">Eventos de {{ organization.name }}</h2>
+<div class="d-flex justify-content-end mb-3">
+    <a href="{% url 'dashboard_event_create' org_slug=organization.slug %}" class="btn btn-success">
+        + Nuevo evento
+    </a>
 </div>
 
 <!-- Upcoming events -->
-<h4 class="mt-4 mb-2">Próximos eventos</h4>
+<h4 class="mt-4 mb-2 text-center">Próximos eventos</h4>
 {% if upcoming_events %}
 <table class="table table-hover">
     <thead>
@@ -96,12 +94,12 @@
     </tbody>
 </table>
 {% else %}
-<div class="alert alert-info">No hay eventos próximos. <a href="{% url 'dashboard_event_create' org_slug=organization.slug %}">Crear el primero</a>.</div>
+<div class="alert alert-info">No hay eventos próximos.</div>
 {% endif %}
 
 <!-- Past events -->
 {% if past_events %}
-<h4 class="mt-5 mb-2">Eventos pasados</h4>
+<h4 class="mt-5 mb-2 text-center">Eventos pasados</h4>
 <table class="table table-hover text-muted">
     <thead>
         <tr>

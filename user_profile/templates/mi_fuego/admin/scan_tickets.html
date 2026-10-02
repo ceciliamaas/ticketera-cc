@@ -1,4 +1,4 @@
-{% extends 'tickets/barbu_base.html' %}
+{% extends 'tickets/app_base.html' %}
 {% load static %}
 
 {% block page_title %}
@@ -467,13 +467,13 @@
             font-size: 1.35rem !important;
             padding: 0.75rem 1.75rem !important;
             color: #fff !important;
-            background-color: #198754 !important;
-            border-color: #198754 !important;
+            background-color: var(--color-accent) !important;
+            border-color: var(--color-accent) !important;
         }
         .scanner-start-btn:hover, .scanner-start-btn:focus {
             color: #fff !important;
-            background-color: #157347 !important;
-            border-color: #146c43 !important;
+            background-color: var(--color-accent-strong) !important;
+            border-color: var(--color-accent-strong) !important;
         }
         .scanner-placeholder-tap:active {
             opacity: 0.95;

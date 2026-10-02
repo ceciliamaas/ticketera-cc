@@ -1,4 +1,4 @@
-{% extends 'tickets/barbu_base.html' %}
+{% extends 'tickets/app_base.html' %}
 {% load static %}
 
 {% block page_title %}Scanner de Tickets{% endblock %}
@@ -102,7 +102,7 @@
     .scanner-icon {
         width: 60px;
         height: 60px;
-        background: linear-gradient(135deg, #289e6d, #1e7a5a);
+        background: linear-gradient(135deg, var(--color-accent), var(--color-accent-strong));
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -121,13 +121,13 @@
     }
     
     .btn-success {
-        background: linear-gradient(135deg, #289e6d, #1e7a5a);
+        background: linear-gradient(135deg, var(--color-accent), var(--color-accent-strong));
         border: none;
         transition: all 0.2s ease;
     }
     
     .btn-success:hover {
-        background: linear-gradient(135deg, #1e7a5a, #155a3e);
+        background: linear-gradient(135deg, var(--color-accent-strong), #8f1026);
         transform: translateY(-1px);
     }
 </style>

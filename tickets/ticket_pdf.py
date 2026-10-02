@@ -102,7 +102,7 @@ def build_new_ticket_pdf_bytes(ticket: NewTicket) -> bytes:
         alignment=1,
     )
 
-    header_bg_color = colors.HexColor('#198754')
+    header_bg_color = colors.HexColor('#d61330')
 
     ticket_id = str(ticket.key)[-2:].upper()
     header_text = f"#{ticket_id} {ticket.event.name}"

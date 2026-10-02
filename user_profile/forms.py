@@ -220,25 +220,26 @@ class VolunteeringForm(forms.ModelForm):
 
 class ProfileUpdateForm(forms.ModelForm):
     """Formulario para actualizar perfil (nombre)."""
-    first_name = forms.CharField(max_length=30, widget=forms.TextInput(attrs={'class': 'form-control'}))
-    last_name = forms.CharField(max_length=30, widget=forms.TextInput(attrs={'class': 'form-control'}))
-    
+    first_name = forms.CharField(
+        max_length=60, label='Nombre/s',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingresa tu nombre'})
+    )
+
     class Meta:
         model = Profile
         fields = []
-    
+
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if self.user:
-            self.fields['first_name'].initial = self.user.first_name
-            self.fields['last_name'].initial = self.user.last_name
-    
+            self.fields['first_name'].initial = f"{self.user.first_name} {self.user.last_name}".strip()
+
     def save(self, commit=True):
         profile = super().save(commit=False)
         if self.user:
             self.user.first_name = self.cleaned_data['first_name']
-            self.user.last_name = self.cleaned_data['last_name']
+            self.user.last_name = ''
             if commit:
                 self.user.save()
         if commit:

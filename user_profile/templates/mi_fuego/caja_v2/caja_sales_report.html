@@ -18,7 +18,7 @@
   .report-stat .value {
     font-size: 1.35rem;
     font-weight: 700;
-    color: #289e6d;
+    color: var(--color-accent);
   }
   .report-stat .label {
     font-size: 0.8rem;
@@ -119,7 +119,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 (function() {
-  const palette = ['#289e6d', '#0d6efd', '#ffc107', '#dc3545', '#6f42c1', '#20c997', '#fd7e14'];
+  const palette = ['#d61330', '#969696', '#161616', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14'];
 
   function barChart(canvasId, data, valueKey, label) {
     const canvas = document.getElementById(canvasId);

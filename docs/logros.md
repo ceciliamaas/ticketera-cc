@@ -35,7 +35,7 @@ Para agregar condiciones nuevas: implementar checker en `CONDITION_CHECKERS` y a
 ## UI
 
 - [`mis_logros.html`](../user_profile/templates/mi_fuego/my_tickets/mis_logros.html): grid de logros con estado bloqueado/desbloqueado.
-- [`logro_unlocked_modal.html`](../user_profile/templates/mi_fuego/partials/logro_unlocked_modal.html): modal de celebración; también incluido en `barbu_base.html` y callback de pago.
+- [`logro_unlocked_modal.html`](../user_profile/templates/mi_fuego/partials/logro_unlocked_modal.html): modal de celebración; también incluido en `app_base.html` y callback de pago.
 - Enlace desde [`my_tickets/index.html`](../user_profile/templates/mi_fuego/my_tickets/index.html).
 
 ## Logro inicial (seed)

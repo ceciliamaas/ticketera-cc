@@ -37,11 +37,16 @@ services:
       # Payment processor keys go here when ready
       # - key: GOOGLE_CLIENT_ID
       # - key: GOOGLE_CLIENT_SECRET
-      # - key: DEFAULT_FROM_EMAIL
-      # - key: EMAIL_HOST
-      # - key: EMAIL_PORT
-      # - key: EMAIL_HOST_USER
-      # - key: EMAIL_HOST_PASSWORD
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
 
 databases:
   - name: ticketera-db

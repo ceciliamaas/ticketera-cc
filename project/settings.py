@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import certifi
 import django
 from django.utils.encoding import smart_str
 
@@ -18,6 +19,9 @@ django.utils.encoding.force_text = force_str
 from dotenv import load_dotenv
 
 load_dotenv()  # take environment variables
+
+# macOS python.org builds ship without a root CA bundle, breaking SMTP TLS; point to certifi's.
+os.environ.setdefault('SSL_CERT_FILE', certifi.where())
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -349,11 +353,8 @@ ACCOUNT_LOGOUT_ON_GET = True
 ACCOUNT_CONFIRM_EMAIL_ON_GET = True
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 
-# Disable automatic messages for login/logout
-ACCOUNT_MESSAGE_TEMPLATE = None
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = (
-    "http" if "localhost" in APP_URL or "127.0.0.1" in APP_URL else "https"
-)
+# Local runserver only serves plain http, regardless of APP_URL (which may point to an ngrok https tunnel for callbacks).
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http" if DEBUG else "https"
 
 CSRF_TRUSTED_ORIGINS = [APP_URL]
 
