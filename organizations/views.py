@@ -440,13 +440,26 @@ def dashboard_member_add(request, org_slug):
         else:
             messages.warning(request, f'{email} ya es miembro.')
     except User.DoesNotExist:
-        # User doesn't have an account yet — create a pending invitation
-        _, created = OrganizationInvitation.objects.get_or_create(
+        # User doesn't have an account yet — create a pending invitation and email them a signup link
+        invitation, created = OrganizationInvitation.objects.get_or_create(
             organization=organization,
             email=email,
             defaults={'role': role, 'invited_by': request.user},
         )
         if created:
+            from urllib.parse import urlencode
+            from utils.email import send_mail
+            send_mail(
+                template_name='organization_invitation',
+                recipient_list=[email],
+                context={
+                    'organization': organization,
+                    'invited_by': request.user,
+                    'email': email,
+                    'role': invitation.get_role_display(),
+                    'sign_up_link': f"{reverse('account_signup')}?{urlencode({'email': email})}",
+                },
+            )
             messages.success(request, f'Invitación enviada a {email}. Cuando se registre, tendrá acceso como {role}.')
         else:
             messages.warning(request, f'Ya existe una invitación pendiente para {email}.')

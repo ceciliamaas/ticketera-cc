@@ -1,0 +1,19 @@
+{% extends 'emails/base.html' %}
+{% block subject %}Te invitaron a administrar {{ organization.name }}{% endblock %}
+{% block title %}
+    ¡TE INVITARON!
+{% endblock %}
+{% block content %}
+    <p>
+        <b>{{ invited_by.get_full_name|default:invited_by.email }}</b> te invitó a administrar
+        <b>{{ organization.name }}</b> en Entrada Popular.
+    </p>
+
+    <p>Para aceptar la invitación, creá tu cuenta con este mismo email (<b>{{ email }}</b>):</p>
+
+    {% include 'emails/partials/btn.html' with label='Crear mi cuenta' href=sign_up_link domain=domain %}
+
+    <p>Apenas confirmes tu cuenta vas a tener acceso como <b>{{ role }}</b> a la organización.</p>
+
+    <p>Cualquier problema que tengas, escribinos a: <a href="mailto:ccgleyzer@gmail.com">ccgleyzer@gmail.com</a></p>
+{% endblock %}
