@@ -83,16 +83,16 @@ def dashboard_event_create(request, org_slug):
                 event.slug = slugify(event.name)
             if not event.max_tickets_per_order:
                 event.max_tickets_per_order = 0
-            # Ensure slug is unique within the organization
+            # Ensure slug is unique site-wide (public event URLs are not scoped by organization)
             base_slug = event.slug
             counter = 1
-            qs = Event.objects.filter(organization=organization, slug=event.slug)
+            qs = Event.objects.filter(slug=event.slug)
             if event.pk:
                 qs = qs.exclude(pk=event.pk)
             while qs.exists():
                 event.slug = f'{base_slug}-{counter}'
                 counter += 1
-                qs = Event.objects.filter(organization=organization, slug=event.slug)
+                qs = Event.objects.filter(slug=event.slug)
                 if event.pk:
                     qs = qs.exclude(pk=event.pk)
             event.save()
@@ -276,14 +276,14 @@ def dashboard_event_edit(request, org_slug, event_id):
                 event.max_tickets_per_order = 0
             if not event.slug:
                 event.slug = slugify(event.name)
-            # Ensure slug uniqueness within the org
+            # Ensure slug is unique site-wide (public event URLs are not scoped by organization)
             base_slug = event.slug
             counter = 1
-            qs = Event.objects.filter(organization=organization, slug=event.slug).exclude(pk=event.pk)
+            qs = Event.objects.filter(slug=event.slug).exclude(pk=event.pk)
             while qs.exists():
                 event.slug = f'{base_slug}-{counter}'
                 counter += 1
-                qs = Event.objects.filter(organization=organization, slug=event.slug).exclude(pk=event.pk)
+                qs = Event.objects.filter(slug=event.slug).exclude(pk=event.pk)
             event.save()
             formset.save()
             # Validate ticket_count sum vs max_tickets

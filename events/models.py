@@ -34,7 +34,7 @@ class Event(BaseModel):
     )
     active = models.BooleanField(default=True, help_text="Event is active and can be accessed")
     is_main = models.BooleanField(default=False, help_text="Main event displayed at /")
-    slug = models.SlugField(max_length=100, null=True, blank=True, help_text="URL-friendly identifier for the event")
+    slug = models.SlugField(max_length=100, unique=True, null=True, blank=True, help_text="URL-friendly identifier for the event")
     name = models.CharField(max_length=255)
     location = models.CharField(max_length=255, blank=True, help_text="Location of the event")
     address = models.CharField(max_length=500, blank=True, help_text="Physical address of the event")
