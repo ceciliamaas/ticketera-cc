@@ -15,8 +15,8 @@ if RENDER_EXTERNAL_HOSTNAME:
 
 CSRF_TRUSTED_ORIGINS = [f'https://{RENDER_EXTERNAL_HOSTNAME}'] if RENDER_EXTERNAL_HOSTNAME else []
 
-# Disable email verification — no email provider configured yet
-ACCOUNT_EMAIL_VERIFICATION = 'none'
+# Mandatory once EMAIL_HOST is configured (SMTP); falls back to 'none' if no email provider is set up.
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory' if os.environ.get('EMAIL_HOST') else 'none'
 if os.environ.get('EMAIL_HOST'):
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 else:
