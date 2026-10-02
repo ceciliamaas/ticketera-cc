@@ -14,20 +14,21 @@ class Command(BaseCommand):
         updated = 0
         skipped = 0
         for user in User.objects.exclude(email=''):
+            has_primary = EmailAddress.objects.filter(user=user, primary=True).exists()
             email_address, was_created = EmailAddress.objects.get_or_create(
                 user=user,
                 email=user.email,
-                defaults={'verified': True, 'primary': True},
+                defaults={'verified': True, 'primary': not has_primary},
             )
             if was_created:
                 created += 1
             elif not email_address.verified:
                 email_address.verified = True
-                email_address.primary = True
-                email_address.save(update_fields=['verified', 'primary'])
+                email_address.save(update_fields=['verified'])
                 updated += 1
             else:
                 skipped += 1
+
 
         self.stdout.write(self.style.SUCCESS(
             f'Created {created}, updated {updated}, already verified {skipped}.'
