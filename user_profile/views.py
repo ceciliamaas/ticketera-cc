@@ -3194,25 +3194,6 @@ def caja_view(request, event_slug):
                             ticket.save()  # Use the custom save method without parameters
                             tickets_created.append(ticket)
                     
-                    # Send email with bonus information to the user if they exist and tickets were created
-                    if user and tickets_created and not mark_as_used:
-                        from utils.email import send_mail
-                        try:
-                            send_mail(
-                                template_name='bonus_issued',
-                                recipient_list=[user.email],
-                                context={
-                                    'user': user,
-                                    'event': event,
-                                    'tickets': tickets_created,
-                                    'order': order,
-                                    'total_amount': total_amount,
-                                }
-                            )
-                            messages.success(request, f'Email enviado a {user.email} con información del bono')
-                        except Exception as e:
-                            messages.warning(request, f'Bono creado pero error al enviar email: {str(e)}')
-                    
                     # Success message
                     total_tickets = len(tickets_created)
                     total_amount_formatted = f"${total_amount:,.0f}".replace(',', '.')

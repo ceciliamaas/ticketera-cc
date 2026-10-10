@@ -2,6 +2,17 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Tables: left-align text (headers included) instead of the default/inherited
+   center alignment; .text-center utility still wins via Bootstrap's !important. */
+.table th,
+.table td,
+table th,
+table td {
+  text-align: left;
 }
 
 :root {
@@ -472,6 +483,17 @@ h1 {
   font-weight: 600;
 }
 
+/* Page titles: left-align by default; .text-center utility still wins (!important). */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-align: left;
+  margin-left: 0 !important;
+}
+
 .title h1 {
   line-height: 3.7rem;
 }
@@ -512,6 +534,7 @@ dl {
     th,
     td {
       padding: 1rem 2rem;
+      vertical-align: middle;
     }
     border: 1px solid #d9d9d9;
   }

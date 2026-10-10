@@ -2,7 +2,13 @@
 {% load org_extras %}
 {% block title %}Eventos — {{ organization.name }}{% endblock %}
 {% block content %}
-<h2 class="text-center mb-2">Eventos de {{ organization.name }}</h2>
+<style>
+  /* Keep Nombre/Fecha/Estado at the same horizontal position across the three event tables below. */
+  .events-table .col-name { width: 25%; }
+  .events-table .col-date { width: 160px; }
+  .events-table .col-status { width: 160px; }
+</style>
+<h2 class="mb-2">Eventos de {{ organization.name }}</h2>
 <div class="d-flex justify-content-end mb-3">
     <a href="{% url 'dashboard_event_create' org_slug=organization.slug %}" class="btn btn-success">
         + Nuevo evento
@@ -10,38 +16,26 @@
 </div>
 
 <!-- Upcoming events -->
-<h4 class="mt-4 mb-2 text-center">Próximos eventos</h4>
 {% if upcoming_events %}
-<table class="table table-hover">
+<div class="card mb-4">
+    <div class="card-header">Próximos eventos</div>
+    <div class="card-body p-0">
+    <div class="table-responsive">
+    <table class="table table-hover events-table mb-0">
     <thead>
         <tr>
-            <th>Nombre</th>
-            <th>Estado</th>
-            <th>Inicio</th>
-            <th>Fin</th>
+            <th class="col-name">Nombre</th>
+            <th class="col-date">Fecha</th>
             <th>Acciones</th>
+            <th class="col-status">Estado</th>
         </tr>
     </thead>
     <tbody>
         {% for event in upcoming_events %}
         <tr>
             <td>{{ event.name }}</td>
-            <td>
-                <form method="post"
-                      action="{% url 'dashboard_event_set_status' org_slug=organization.slug event_id=event.pk %}"
-                      class="d-inline">
-                    {% csrf_token %}
-                    <select name="status" class="form-select form-select-sm w-auto"
-                            onchange="this.form.submit()"
-                            style="min-width:130px">
-                        <option value="published" {% if event.status == 'published' %}selected{% endif %}>Publicado</option>
-                        <option value="draft" {% if event.status == 'draft' %}selected{% endif %}>Borrador</option>
-                    </select>
-                </form>
-            </td>
             <td>{{ event.start|date:"d/m/Y H:i" }}</td>
-            <td>{{ event.end|date:"d/m/Y H:i" }}</td>
-            <td class="d-flex gap-1 flex-wrap">
+            <td class="d-flex gap-1 flex-wrap align-items-center align-content-center actions-cell">
                 <a href="{% url 'dashboard_event_edit' org_slug=organization.slug event_id=event.pk %}"
                    class="btn btn-sm btn-outline-primary">Editar</a>
                 <a href="{% url 'dashboard_event_reservas' org_slug=organization.slug event_id=event.pk %}"
@@ -89,24 +83,42 @@
                 {% endif %}
                 {% endwith %}
             </td>
+            <td>
+                <form method="post"
+                      action="{% url 'dashboard_event_set_status' org_slug=organization.slug event_id=event.pk %}"
+                      class="d-inline">
+                    {% csrf_token %}
+                    <select name="status" class="form-select form-select-sm w-auto"
+                            onchange="this.form.submit()"
+                            style="min-width:130px">
+                        <option value="published" {% if event.status == 'published' %}selected{% endif %}>Publicado</option>
+                        <option value="draft" {% if event.status == 'draft' %}selected{% endif %}>Borrador</option>
+                    </select>
+                </form>
+            </td>
         </tr>
         {% endfor %}
     </tbody>
-</table>
+    </table>
+    </div>
+    </div>
+</div>
 {% else %}
 <div class="alert alert-info">No hay eventos próximos.</div>
 {% endif %}
 
 <!-- Past events -->
 {% if past_events %}
-<h4 class="mt-5 mb-2 text-center">Eventos pasados</h4>
-<table class="table table-hover text-muted">
+<div class="card mb-4">
+    <div class="card-header">Eventos pasados</div>
+    <div class="card-body p-0">
+    <div class="table-responsive">
+    <table class="table table-hover text-muted events-table mb-0">
     <thead>
         <tr>
-            <th>Nombre</th>
-            <th>Inicio</th>
-            <th>Fin</th>
-            <th></th>
+            <th class="col-name">Nombre</th>
+            <th class="col-date">Fecha</th>
+            <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
@@ -114,8 +126,7 @@
         <tr>
             <td>{{ event.name }}</td>
             <td>{{ event.start|date:"d/m/Y H:i" }}</td>
-            <td>{{ event.end|date:"d/m/Y H:i" }}</td>
-            <td class="d-flex gap-1">
+            <td class="d-flex gap-1 align-items-center actions-cell">
                 <a href="{% url 'dashboard_event_reservas' org_slug=organization.slug event_id=event.pk %}"
                    class="btn btn-sm btn-outline-secondary">Ver reservas</a>
                 <form method="post"
@@ -130,18 +141,23 @@
         </tr>
         {% endfor %}
     </tbody>
-</table>
+    </table>
+    </div>
+    </div>
+</div>
 {% endif %}
 
 {% if cancelled_events %}
-<h4 class="mt-5 mb-2">Eventos cancelados</h4>
-<table class="table table-hover text-muted">
+<div class="card mb-4">
+    <div class="card-header">Eventos cancelados</div>
+    <div class="card-body p-0">
+    <div class="table-responsive">
+    <table class="table table-hover text-muted events-table mb-0">
     <thead>
         <tr>
-            <th>Nombre</th>
-            <th>Inicio</th>
-            <th>Fin</th>
-            <th></th>
+            <th class="col-name">Nombre</th>
+            <th class="col-date">Fecha</th>
+            <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
@@ -149,8 +165,7 @@
         <tr>
             <td>{{ event.name }} <span class="badge bg-danger ms-1">Cancelado</span></td>
             <td>{{ event.start|date:"d/m/Y H:i" }}</td>
-            <td>{{ event.end|date:"d/m/Y H:i" }}</td>
-            <td class="d-flex gap-1">
+            <td class="d-flex gap-1 align-items-center actions-cell">
                 <a href="{% url 'dashboard_event_reservas' org_slug=organization.slug event_id=event.pk %}"
                    class="btn btn-sm btn-outline-secondary">Ver reservas</a>
                 <form method="post"
@@ -165,7 +180,10 @@
         </tr>
         {% endfor %}
     </tbody>
-</table>
+    </table>
+    </div>
+    </div>
+</div>
 {% endif %}
 
 {% endblock %}

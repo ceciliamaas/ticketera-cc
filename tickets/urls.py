@@ -45,6 +45,7 @@ urlpatterns = [
     path('ticket/<str:ticket_key>/transfer/', new_ticket.transfer_ticket, name='transfer_ticket'),
     path('ticket/<str:ticket_key>/unassign/', new_ticket.unassign_ticket, name='unassign_ticket'),
     path('ticket/<str:ticket_key>/unassign-check/', new_ticket.unassign_ticket_check, name='unassign_ticket_check'),
+    path('ticket/<str:ticket_key>/resend-email/', new_ticket.resend_ticket_email, name='resend_ticket_email'),
     path('ticket/transfer-ticket/cancel-ticket-transfer', new_ticket.cancel_ticket_transfer,
          name='cancel_ticket_transfer'),
 

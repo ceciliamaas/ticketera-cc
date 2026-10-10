@@ -32,6 +32,9 @@
                     {% if event.location %}{{ event.location }}{% endif %}{% if event.location and event.ciudad %}, {% endif %}{% if event.ciudad %}{{ event.ciudad }}{% endif %}
                 </p>
                 {% endif %}
+                {% if event.start and not event.is_recurring %}
+                <p class="text-muted mb-1"><i class="fa-regular fa-calendar me-1"></i>{{ event.start|date:"d/m/Y H:i" }}</p>
+                {% endif %}
                 {% if occurrence_date %}
                   <p class="text-muted mb-2"><i class="fa-regular fa-calendar me-1"></i>Función: <strong>{{ occurrence_date|date:"d/m/Y H:i" }}</strong></p>
                 {% endif %}

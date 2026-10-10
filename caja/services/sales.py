@@ -1,4 +1,3 @@
-import logging
 import uuid
 from decimal import Decimal
 
@@ -12,7 +11,6 @@ from caja.stock import InsufficientStockError, deduct_for_lines, validate_lines
 from tickets.models import NewTicket, Order, OrderTicket
 
 User = get_user_model()
-logger = logging.getLogger(__name__)
 
 
 def _order_type_for_payment(payment_method):
@@ -97,22 +95,6 @@ def _issue_caja_tickets(order, event, ticket_lines, user, sold_by, mark_as_used)
     return tickets_created
 
 
-def _send_bonus_issued_email(user, event, order, tickets_created, total_amount):
-    from utils.email import send_mail
-
-    send_mail(
-        template_name='bonus_issued',
-        recipient_list=[user.email],
-        context={
-            'user': user,
-            'event': event,
-            'tickets': tickets_created,
-            'order': order,
-            'total_amount': total_amount,
-        },
-    )
-
-
 def _validate_ticket_sale_requirements(ticket_lines, customer_email, mark_as_used):
     if ticket_lines and not mark_as_used and not customer_email:
         raise ValueError('Debe proporcionar un email o marcar como usado (venta en puerta).')
@@ -192,7 +174,7 @@ def finalize_caja_sale(caja_sale, net_received_amount=None):
                 order.status = Order.OrderStatus.CONFIRMED
                 order.save(update_fields=['user', 'status', 'updated_at'])
 
-            tickets_created = _issue_caja_tickets(
+            _issue_caja_tickets(
                 order,
                 event,
                 ticket_lines,
@@ -200,18 +182,6 @@ def finalize_caja_sale(caja_sale, net_received_amount=None):
                 caja_sale.sold_by,
                 caja_sale.mark_as_used,
             )
-
-            if customer and tickets_created and not caja_sale.mark_as_used:
-                try:
-                    _send_bonus_issued_email(
-                        customer,
-                        event,
-                        order,
-                        tickets_created,
-                        caja_sale.total_amount,
-                    )
-                except Exception as exc:
-                    logger.warning('Caja sale %s: bonus email failed: %s', caja_sale.id, exc)
         elif caja_sale.customer_email:
             _create_or_get_customer(caja_sale.customer_email)
 

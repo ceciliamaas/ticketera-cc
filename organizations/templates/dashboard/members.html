@@ -26,7 +26,11 @@
     </div>
 </div>
 
-<table class="table table-hover">
+<div class="card mb-4">
+    <div class="card-header">Miembros</div>
+    <div class="card-body p-0">
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
     <thead>
         <tr>
             <th>Usuario</th>
@@ -59,11 +63,16 @@
         <tr><td colspan="5" class="text-center text-muted">Sin miembros aún.</td></tr>
         {% endfor %}
     </tbody>
-</table>
-
+    </table>
+    </div>
+    </div>
+</div>
 {% if invitations %}
-<h5 class="mt-4 mb-3">Invitaciones pendientes</h5>
-<table class="table table-hover">
+<div class="card mb-4">
+    <div class="card-header">Invitaciones pendientes</div>
+    <div class="card-body p-0">
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
     <thead>
         <tr>
             <th>Email</th>
@@ -89,6 +98,9 @@
         </tr>
         {% endfor %}
     </tbody>
-</table>
+    </table>
+    </div>
+    </div>
+</div>
 {% endif %}
 {% endblock %}

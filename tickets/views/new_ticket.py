@@ -4,6 +4,7 @@ from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
 from django.db import transaction
@@ -17,9 +18,28 @@ from allauth.account.models import EmailAddress
 
 from events.models import GrupoMiembro
 from tickets.models import NewTicket, NewTicketTransfer
-from utils.email import send_mail
 
 logger = logging.getLogger(__name__)
+
+
+@login_required
+def resend_ticket_email(request, ticket_key):
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    try:
+        ticket = NewTicket.objects.select_related('order', 'event', 'ticket_type').get(key=ticket_key)
+    except NewTicket.DoesNotExist:
+        messages.error(request, 'Bono no encontrado')
+        return redirect('my_ticket')
+
+    if ticket.holder != request.user:
+        return HttpResponseForbidden('No autorizado')
+
+    ticket.send_ticket_email(request.user.email)
+    messages.success(request, f'Te reenviamos el email con tu entrada a {request.user.email}')
+
+    return redirect('my_ticket')
 
 
 @login_required
@@ -140,14 +160,6 @@ def transfer_ticket(request, ticket_key):
 
             new_ticket_transfer.save()
             ticket.save()
-
-        send_mail(
-            template_name='new_transfer_success',
-            recipient_list=[email],
-            context={
-                'ticket_count': 1,
-            }
-        )
 
     return JsonResponse({'status': 'OK', 'destination_user_exists': destination_user_exists})
 

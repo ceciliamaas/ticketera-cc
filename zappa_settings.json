@@ -34,10 +34,6 @@
         "expression": "rate(5 minutes)"
       },
       {
-        "function": "tickets.email_crons.send_pending_actions_emails",
-        "expression": "cron(0 17 * * ? *)"
-      },
-      {
         "function": "events.main_event_cron.sync_main_event",
         "expression": "rate(1 hour)"
       }
@@ -76,10 +72,6 @@
       {
         "function": "tickets.payment_check_cron.check_pending_payments",
         "expression": "rate(5 minutes)"
-      },
-      {
-        "function": "tickets.email_crons.send_pending_actions_emails",
-        "expression": "cron(0 17 * * ? *)"
       },
       {
         "function": "user_profile.sede_sync_cron.sync_sede_members",

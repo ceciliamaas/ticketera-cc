@@ -33,7 +33,6 @@ def ticket_transfer(request, ticket_key):
             transfer.volunteer_transmutator = False
             transfer.volunteer_umpalumpa = False
             transfer.save()
-            transfer.send_email()
 
             return HttpResponseRedirect(reverse('ticket_transfer_confirmation', args=[ticket.key]))
     else:

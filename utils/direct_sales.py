@@ -1,11 +1,7 @@
-from urllib.parse import urlencode
-
 from django.db import transaction
-from django.urls import reverse
 
 from tickets.models import Order, NewTicket, TicketType, DirectTicketTemplate, DirectTicketTemplateStatus, \
     NewTicketTransfer
-from utils.email import send_mail
 
 
 def direct_sales_existing_user(user, template_tickets, order_type, notes, request_user):
@@ -70,14 +66,6 @@ def direct_sales_existing_user(user, template_tickets, order_type, notes, reques
         order.amount = emitted_tickets * ticket_type.price
         order.save()
 
-        send_mail(
-            template_name='new_transfer_success',
-            recipient_list=[user.email],
-            context={
-                'ticket_count': emitted_tickets,
-            }
-        )
-
         return order.id
 
 
@@ -134,13 +122,4 @@ def direct_sales_new_user(destination_email, template_tickets, order_type, notes
         order.amount = emitted_tickets * ticket_type.price
         order.save()
 
-        send_mail(
-            template_name='new_transfer_no_account',
-            recipient_list=[destination_email],
-            context={
-                'ticket_count': emitted_tickets,
-                'destination_email': destination_email,
-                'sign_up_link': f"{reverse('account_signup')}?{urlencode({'email': destination_email})}"
-            }
-        )
         return order.id

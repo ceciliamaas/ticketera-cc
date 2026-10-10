@@ -10,6 +10,31 @@
 
     <p><b>CONFIRMADA</b></p>
 
+    <p>
+        <b>Evento:</b> {{ event.name|safe }}<br/>
+        <b>Fecha y hora:</b> {{ event.start|date:"d/m/Y H:i" }}{% if event.end %} &ndash; {{ event.end|date:"H:i" }}{% endif %}<br/>
+        {% if event.location %}<b>Lugar:</b> {{ event.location }}<br/>{% endif %}
+        <b>Comprada por:</b> {{ order.first_name }} {{ order.last_name }}<br/>
+        <b>Cantidad de entradas:</b> {{ tickets|length }}
+    </p>
+
+    {% if tickets %}
+        {% for ticket in tickets %}
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px auto;">
+                <tr>
+                    <td class="align-center">
+                        <img src="data:image/png;base64,{{ ticket.generate_qr_code }}" width="200" height="200" alt="QR Code"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="align-center">
+                        <small>{{ ticket.ticket_type.name }}</small>
+                    </td>
+                </tr>
+            </table>
+        {% endfor %}
+    {% endif %}
+
     <p>Podes ver tus entradas ingresando a
 
         {% include 'emails/partials/btn.html' with label='Mis Entradas' href='/mis-entradas/proximos-eventos/'  domain=domain %}

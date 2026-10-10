@@ -242,17 +242,26 @@ class Order(BaseModel):
             mint_tickets(self)
 
     def send_confirmation_email(self):
+        tickets = []
+        if self.event:
+            tickets = list(
+                NewTicket.objects.filter(order=self, event=self.event)
+                .select_related('event', 'ticket_type', 'owner', 'holder', 'owner__profile')
+                .order_by('id')
+            )
+
         kwargs = {
             'template_name': 'order_success',
             'recipient_list': [self.email],
             'context': {
                 'order': self,
                 'event': self.event,
+                'tickets': tickets,
                 'has_many_tickets': NewTicket.objects.filter(holder=self.user, event=self.event).count() > 1,
             },
         }
 
-        if self.event and not self.event.attendee_must_be_registered:
+        if self.event and not self.event.attendee_must_be_registered and tickets:
             try:
                 from tickets.ticket_pdf import build_new_ticket_pdf_bytes, new_ticket_pdf_filename
             except ImportError:
@@ -261,27 +270,21 @@ class Order(BaseModel):
                     self.id,
                 )
             else:
-                tickets = list(
-                    NewTicket.objects.filter(order=self, event=self.event)
-                    .select_related('event', 'ticket_type', 'owner', 'holder', 'owner__profile')
-                    .order_by('id')
-                )
-                if tickets:
-                    try:
-                        kwargs['attachments'] = [
-                            (
-                                new_ticket_pdf_filename(t),
-                                build_new_ticket_pdf_bytes(t),
-                                'application/pdf',
-                            )
-                            for t in tickets
-                        ]
-                    except Exception as e:
-                        logging.exception(
-                            'Order %s: failed to attach ticket PDFs to confirmation email: %s',
-                            self.id,
-                            e,
+                try:
+                    kwargs['attachments'] = [
+                        (
+                            new_ticket_pdf_filename(t),
+                            build_new_ticket_pdf_bytes(t),
+                            'application/pdf',
                         )
+                        for t in tickets
+                    ]
+                except Exception as e:
+                    logging.exception(
+                        'Order %s: failed to attach ticket PDFs to confirmation email: %s',
+                        self.id,
+                        e,
+                    )
 
         send_mail(**kwargs)
         logging.info(f'Order {self.id} confirmation email sent')
@@ -376,6 +379,19 @@ class NewTicket(BaseModel):
     def is_volunteer(self):
         return self.volunteer_ranger or self.volunteer_transmutator or self.volunteer_umpalumpa or self.volunteer_mad
 
+    def send_ticket_email(self, recipient_email):
+        """Resends the order_success email, scoped to just this ticket, to the given address."""
+        send_mail(
+            template_name='order_success',
+            recipient_list=[recipient_email],
+            context={
+                'order': self.order,
+                'event': self.event,
+                'tickets': [self],
+                'has_many_tickets': False,
+            },
+        )
+
     def __str__(self):
         return f'Ticket {self.key} - {self.ticket_type} - holder: {self.holder} - owner: {self.owner}'
 
@@ -433,29 +449,6 @@ class Ticket(TicketPerson, BaseModel):
     def get_absolute_url(self):
         return reverse('public_ticket_detail', args=(self.key,))
 
-    def send_email(self):
-        # img = qrcode.make(f'{settings.APP_URL}{url}')
-
-        # logo = Image.open('tickets/static/img/logo.png')
-        # img.paste(logo)
-
-        # stream = BytesIO()
-        # img.save(stream, format="png")
-        # stream.seek(0)
-        # imgObj = stream.read()
-
-        # inline_img = InlineImage(content=imgObj, filename='qr.png', subtype='png')
-
-        return send_mail(
-            template_name='ticket',
-            recipient_list=[self.email],
-            context={
-                'ticket': self,
-                'event': self.order.ticket_type.event,
-                # 'qr': inline_img
-            }
-        )
-
 
 class TicketTransfer(TicketPerson, BaseModel):
     key = models.UUIDField(default=uuid.uuid4, editable=False)
@@ -473,18 +466,7 @@ class TicketTransfer(TicketPerson, BaseModel):
         self.ticket.phone = self.phone
         self.ticket.dni = self.dni
         self.ticket.save()
-        self.ticket.send_email()
         self.save()
-
-    def send_email(self):
-        return send_mail(
-            template_name='transfer',
-            recipient_list=[self.ticket.email],
-            context={
-                'transfer': self,
-                'ticket': self.ticket,
-            }
-        )
 
     def get_absolute_url(self):
         return reverse('ticket_transfer_confirmed', args=(self.key,))

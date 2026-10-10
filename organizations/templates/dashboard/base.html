@@ -24,7 +24,7 @@
             Panel de administración{% if organization %} · {{ organization.name }}{% endif %}
         </small>
     </div>
-    <ul class="nav d-flex flex-row align-items-center flex-nowrap flex-wrap">
+    <ul class="nav d-none d-md-flex flex-row align-items-center flex-nowrap flex-wrap">
         {% with url_name=request.resolver_match.url_name %}
         {% if request.user.is_superuser %}
             <li class="nav-item">
@@ -59,7 +59,64 @@
             </div>
         </li>
     </ul>
+    <button class="navbar-toggler d-md-none border-0 p-0" type="button" data-bs-toggle="collapse"
+            data-bs-target="#dashboardMobileNavMenu" aria-controls="dashboardMobileNavMenu" aria-expanded="false"
+            aria-label="Abrir menú">
+        <span class="navbar-toggler-icon"></span>
+    </button>
 </header>
+<div class="collapse d-md-none mobile-nav-collapse header-admin" id="dashboardMobileNavMenu">
+    <ul class="nav flex-column">
+        {% with url_name=request.resolver_match.url_name %}
+        {% if request.user.is_superuser %}
+            <li class="nav-item">
+                <span class="badge bg-warning text-dark">Superuser</span>
+            </li>
+            <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_su_events' %} active{% endif %}" href="{% url 'dashboard_su_events' %}">Gestionar eventos</a></li>
+            <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_su_members' %} active{% endif %}" href="{% url 'dashboard_su_members' %}">Gestionar miembros</a></li>
+            <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_su_settings' %} active{% endif %}" href="{% url 'dashboard_su_settings' %}">Gestionar organización</a></li>
+        {% elif organization %}
+            <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_event_list' or url_name == 'dashboard_event_create' or url_name == 'dashboard_event_edit' or url_name == 'dashboard_event_reservas' %} active{% endif %}" href="{% url 'dashboard_event_list' org_slug=organization.slug %}">Gestionar eventos</a></li>
+            <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_members' or url_name == 'dashboard_member_add' or url_name == 'dashboard_member_remove' or url_name == 'dashboard_invitation_cancel' %} active{% endif %}" href="{% url 'dashboard_members' org_slug=organization.slug %}">Gestionar miembros</a></li>
+            <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_org_edit' or url_name == 'dashboard_mp_connect' or url_name == 'dashboard_mp_oauth_start' or url_name == 'dashboard_mp_disconnect' %} active{% endif %}" href="{% url 'dashboard_org_edit' org_slug=organization.slug %}">Gestionar organización</a></li>
+        {% endif %}
+        {% endwith %}
+        <li class="nav-item">
+            <div class="mode-toggle">
+                <a href="{% url 'dashboard_home' %}" class="active">Gestionar</a>
+                <a href="/">Comprar</a>
+            </div>
+        </li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'my_ticket' %}"><i class="fa-solid fa-ticket me-2"></i>Mis entradas</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'my_ticket_past' %}"><i class="fa-regular fa-clock me-2"></i>Eventos pasados</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'profile' %}"><i class="fa-solid fa-user me-2"></i>Perfil</a></li>
+        <li class="nav-item"><a class="nav-link text-danger" href="{% url 'account_logout' %}"><i class="fa-solid fa-power-off me-2"></i>Cerrar sesión</a></li>
+    </ul>
+</div>
+<style>
+    .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3e%3cpath stroke='rgba(255, 255, 255, 0.9)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    }
+    .mobile-nav-collapse {
+        padding: 0 1rem 1rem;
+    }
+    .mobile-nav-collapse .nav-item {
+        border-right: none !important;
+        padding: 0 !important;
+        width: 100%;
+    }
+    .mobile-nav-collapse .nav-item:before {
+        content: none !important;
+    }
+    .mobile-nav-collapse .nav-link {
+        width: 100%;
+        padding: 0.6rem 0 !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .mobile-nav-collapse .mode-toggle {
+        margin: 0.6rem 0;
+    }
+</style>
 <div class="container mt-4">
     {% if organization and organization.mp_connected %}
         {% with days=organization.mp_days_until_expiry %}

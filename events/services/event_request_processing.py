@@ -8,7 +8,6 @@ from django.utils.text import slugify
 
 from events.models import EventRequest
 from events.services.event_request_chatwoot import send_chatwoot_reply
-from utils.email import send_mail
 from tickets.models import TicketType
 
 logger = logging.getLogger(__name__)
@@ -105,39 +104,8 @@ def approve_event_request(event_request):
             f'Admin asignado: {event_request.requested_by.email}'
         ),
     )
-    _send_approval_email(event_request, event)
     logger.info('Propuesta #%s aprobada; evento %s creado', event_request.pk, event.slug)
     return True, f'Propuesta #{event_request.pk} aprobada. Evento `{event.slug}` creado.'
-
-
-def _send_approval_email(event_request, event):
-    requester = event_request.requested_by
-    to_email = (requester.email or '').strip()
-    if not to_email:
-        logger.warning(
-            'Propuesta #%s aprobada pero el solicitante no tiene email',
-            event_request.pk,
-        )
-        return
-
-    try:
-        send_mail(
-            template_name='event_request_approved',
-            recipient_list=[to_email],
-            context={
-                'user': requester,
-                'event': event,
-                'event_request': event_request,
-                'event_admin_path': reverse('event_admin', kwargs={'event_slug': event.slug}),
-                'event_config_path': reverse('event_management', kwargs={'event_slug': event.slug}),
-                'ticket_types_path': reverse('ticket_types_management', kwargs={'event_slug': event.slug}),
-            },
-        )
-    except Exception:
-        logger.exception(
-            'No se pudo enviar email de aprobación para propuesta #%s',
-            event_request.pk,
-        )
 
 
 def reject_event_request(event_request, reason=''):

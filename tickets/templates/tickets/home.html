@@ -148,17 +148,15 @@
   {% if active_events %}
     <div class="row g-3">
       {% for event in active_events %}
-      <div class="col-6 col-sm-4 col-md-3 col-lg-3">
-        <div class="card h-100 shadow-sm border-0">
+      <div class="col-12 col-sm-4 col-md-3 col-lg-3">
+        <div class="card h-100 shadow-sm border-0 event-gallery-card">
           {% with hero=event.header_image|default:event.organization.photo %}
           {% if hero %}
             <img src="{{ hero.url }}"
-                 class="card-img-top"
-                 alt="{{ event.name }}"
-                 style="aspect-ratio: 1080/1350; object-fit: cover; width: 100%;">
+                 class="card-img-top event-gallery-card-img"
+                 alt="{{ event.name }}">
           {% else %}
-            <div class="card-img-top bg-dark d-flex align-items-center justify-content-center"
-                 style="aspect-ratio: 1080/1350;">
+            <div class="card-img-top bg-dark d-flex align-items-center justify-content-center event-gallery-card-img">
               <span class="text-white">{{ event.name }}</span>
             </div>
           {% endif %}
@@ -212,6 +210,36 @@
   {% endif %}
 </div>
 {% endif %}
+
+<style>
+  /* Desktop/tablet: poster-style card, image on top (can crop to keep uniform grid) */
+  .event-gallery-card-img {
+    aspect-ratio: 1080 / 1350;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  /* Mobile: full-width row, image beside text, never cropped */
+  @media (max-width: 575.98px) {
+    .event-gallery-card {
+      flex-direction: row;
+    }
+    .event-gallery-card-img {
+      aspect-ratio: auto;
+      width: 110px;
+      min-width: 110px;
+      height: auto;
+      max-height: 140px;
+      object-fit: contain;
+      background-color: #f8f9fa;
+      border-top-right-radius: 0;
+      border-bottom-left-radius: calc(0.375rem - 1px);
+    }
+    .event-gallery-card .card-body {
+      padding: 0.75rem;
+    }
+  }
+</style>
 
 {% endblock %}
 

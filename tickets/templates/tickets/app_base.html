@@ -70,21 +70,10 @@
           <img src="{% static 'img/logo-navbar.png' %}" alt="Ticketera" style="height: 32px; width: auto; display: block;">
         </a>
       </div>
-      <ul class="nav d-flex flex-row align-items-center flex-nowrap">
-        <li class="nav-item d-none d-md-block">
+      <ul class="nav d-none d-md-flex flex-row align-items-center flex-nowrap">
+        <li class="nav-item">
           <a class="nav-link" href="{% url 'events_listing' %}">Eventos</a>
         </li>
-        <!-- Ticket counter for mobile -->
-        {% if request.user.is_authenticated %}
-          <li class="nav-item d-sm-none">
-            <a href="{% url 'my_ticket' %}" class="nav-link p-0">
-              <div class="d-flex align-items-center gap-2 ticket-counter">
-                <i class="fa-solid fa-ticket text-white fs-5"></i>
-                <span class="text-white me-2">{{ total_tickets }}</span>
-              </div>
-            </a>
-          </li>
-        {% endif %}
         {% if request.user.is_authenticated %}
           {% if user.is_superuser or user.organization_memberships.exists %}
           <li class="nav-item no-border">
@@ -116,7 +105,7 @@
           </li>
         {% endif %}
         <!-- Ticket counter for desktop -->
-        <li class="nav-item d-none d-sm-block no-border">
+        <li class="nav-item no-border">
           {% if request.user.is_authenticated %}
             <a href="{% url 'my_ticket' %}" class="nav-link p-0">
               <div class="d-flex align-items-center gap-2 ticket-counter">
@@ -127,8 +116,77 @@
           {% endif %}
         </li>
       </ul>
+      <!-- Mobile: ticket counter + hamburger toggle -->
+      <div class="d-flex d-md-none align-items-center gap-3">
+        {% if request.user.is_authenticated %}
+          <a href="{% url 'my_ticket' %}" class="nav-link p-0">
+            <div class="d-flex align-items-center gap-2 ticket-counter">
+              <i class="fa-solid fa-ticket text-white fs-5"></i>
+              <span class="text-white me-2">{{ total_tickets }}</span>
+            </div>
+          </a>
+        {% endif %}
+        <button class="navbar-toggler border-0 p-0" type="button" data-bs-toggle="collapse"
+                data-bs-target="#mobileNavMenu" aria-controls="mobileNavMenu" aria-expanded="false"
+                aria-label="Abrir menú">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
     </header>
+    <div class="collapse d-md-none mobile-nav-collapse" id="mobileNavMenu">
+      <ul class="nav flex-column">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'events_listing' %}">Eventos</a>
+        </li>
+        {% if request.user.is_authenticated %}
+          {% if user.is_superuser or user.organization_memberships.exists %}
+          <li class="nav-item">
+            <div class="mode-toggle">
+              <a href="{% url 'dashboard_home' %}">Gestionar</a>
+              <a href="/" class="active">Comprar</a>
+            </div>
+          </li>
+          {% endif %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'my_ticket' %}"><i class="fa-solid fa-ticket me-2"></i>Mis entradas</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'my_ticket_past' %}"><i class="fa-regular fa-clock me-2"></i>Eventos pasados</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'profile' %}"><i class="fa-solid fa-user me-2"></i>Perfil</a></li>
+          <li class="nav-item"><a class="nav-link text-danger" href="{% url 'account_logout' %}"><i class="fa-solid fa-power-off me-2"></i>Cerrar sesión</a></li>
+        {% else %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'account_login' %}">Iniciar Sesión</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'account_signup' %}">Registrarse</a></li>
+        {% endif %}
+      </ul>
+    </div>
     <style>
+      .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3e%3cpath stroke='rgba(255, 255, 255, 0.9)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+      }
+
+      .mobile-nav-collapse {
+        background: var(--surface-dark);
+        padding: 0 1rem 1rem;
+      }
+
+      .mobile-nav-collapse .nav-item {
+        border-right: none !important;
+        padding: 0 !important;
+        width: 100%;
+      }
+
+      .mobile-nav-collapse .nav-item:before {
+        content: none !important;
+      }
+
+      .mobile-nav-collapse .nav-link {
+        width: 100%;
+        padding: 0.6rem 0 !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+      }
+
+      .mobile-nav-collapse .mode-toggle {
+        margin: 0.6rem 0;
+      }
+
       .ticket-counter {
         transition: transform 0.3s ease;
         cursor: pointer;
@@ -221,8 +279,16 @@
     {% endblock full_content %}
     {% block footer %}
     <footer class="w-100 d-flex justify-content-between align-items-center gap-2 py-3 px-4 mt-auto">
-      <div class="d-flex align-items-center gap-2 fw-bold" style="color: #969696; font-family: 'Inter', sans-serif;">
-        GLEYZER PRODUCCIONES
+      <div class="fw-bold" style="color: #969696; font-family: 'Inter', sans-serif;">
+        <a href="https://gleyzercultura.com.ar/" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">GLEYZER CULTURA</a>
+      </div>
+      <div class="d-flex align-items-center gap-3" style="color: #969696;">
+        <a href="https://www.instagram.com/gleyzer.producciones/" target="_blank" rel="noopener noreferrer" style="color: inherit;">
+          <i class="fa-brands fa-instagram"></i>
+        </a>
+        <a href="https://www.youtube.com/@GleyzerPoduciones" target="_blank" rel="noopener noreferrer" style="color: inherit;">
+          <i class="fa-brands fa-youtube"></i>
+        </a>
       </div>
     </footer>
     {% endblock footer %}
