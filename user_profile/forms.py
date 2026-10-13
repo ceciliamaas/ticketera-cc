@@ -21,6 +21,12 @@ class CustomSignupForm(SignupForm):
         max_length=30, label='Apellido/s', required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingresa tu apellido'})
     )
+    accept_terms = forms.BooleanField(
+        required=True,
+        initial=True,
+        label='Acepto los términos y condiciones',
+        error_messages={'required': 'Debés aceptar los términos y condiciones para crear una cuenta.'},
+    )
 
     def save(self, request):
         user = super().save(request)

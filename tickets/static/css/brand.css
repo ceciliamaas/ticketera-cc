@@ -943,7 +943,7 @@ dl {
     width: 100%;
   }
 
-  input:not(.phone-input),
+  input:not(.phone-input):not([type="checkbox"]):not([type="radio"]),
   select {
     padding: 1rem !important;
   }

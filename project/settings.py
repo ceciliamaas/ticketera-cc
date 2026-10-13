@@ -336,6 +336,8 @@ ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+# Don't prefix email subjects with "[site_name]" (e.g. "[127.0.0.1:8000] ") - use the subject templates as-is.
+ACCOUNT_EMAIL_SUBJECT_PREFIX = ''
 
 # Custom signup form and adapter
 ACCOUNT_FORMS = {'signup': 'user_profile.forms.CustomSignupForm'}

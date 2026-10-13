@@ -71,9 +71,43 @@
                                    minlength="8"
                                    required>
                             {{ redirect_field }}
+                            <div class="form-check text-start w-100">
+                                <input type="checkbox"
+                                       class="form-check-input"
+                                       id="id_accept_terms"
+                                       name="accept_terms"
+                                       {% if form.accept_terms.value %}checked{% endif %}>
+                                <label class="form-check-label" for="id_accept_terms">
+                                    Acepto los
+                                    <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">términos y condiciones</a>
+                                </label>
+                                {% if form.accept_terms.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.accept_terms.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
                             <button type="submit" id="submit-button" class="btn btn-primary">Registrarme</button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-start">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="termsModalLabel">Términos y condiciones</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Este sistema de venta de entradas es un desarrollo propio de Gleyzer Cultura. Incluye una integración con Mercado Pago para procesar los pagos y con Gmail para el envío de correos electrónicos.</p>
+                    <p>Al comprar una entrada, la organización que organiza el evento almacena tu nombre y tu dirección de correo electrónico, y podría utilizarlos para enviarte información sobre eventos similares. Podés optar por ser retirade de esta lista de difusión respondiendo al correo del cual recibas esa información.</p>
+                    <p class="mb-0">Tus datos no se utilizan para ningún otro propósito.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendido</button>
                 </div>
             </div>
         </div>
