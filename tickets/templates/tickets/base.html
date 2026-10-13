@@ -10,7 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
           integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 
-    <link rel="icon" href="{% static 'img/favicon.png' %}" type="image/png">
+    <link rel="icon" href="{% static 'img/favicon.png' %}?v=2" type="image/png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css"
           integrity="sha384-h/hnnw1Bi4nbpD6kE7nYfCXzovi622sY5WBxww8ARKwpdLj5kUWjRuyiXaD1U2JT" crossorigin="anonymous">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,18 +28,16 @@
             text-align: center;
         }
 
-        {% with hero=event.header_image|default:event.organization.photo %}
         .site-header {
-            {% if hero %}background: url("{{ hero.url }}") no-repeat center center;{% endif %}
+            background: url("{% if event.header_image %}{{ event.header_image.url }}{% else %}{% static 'img/default_banner.png' %}{% endif %}") no-repeat center center;
             height: 200px;
         }
 
         @media only screen and (min-width: 601px) {
             .site-header.hero {
-                height: {% if event.header_image %}{{event.header_image.height}}{% elif event.organization.photo %}{{event.organization.photo.height}}{% else %}200{% endif %}px !important;
+                height: {% if event.header_image %}{{event.header_image.height}}{% else %}200{% endif %}px !important;
             }
         }
-        {% endwith %}
 
         @media (max-width: 996px) {
             .navbarNav {
@@ -121,7 +119,7 @@
     </style>
     <!-- TODO move this shit to some other place  -->
 
-    <title>{% block title %}{% endblock title %}Ticketera</title>
+    <title>{% block title %}{% endblock title %}Entrada Popular</title>
 
     {% include 'tickets/partials/og_meta.html' %}
 

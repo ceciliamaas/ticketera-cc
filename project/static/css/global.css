@@ -1,11 +1,6 @@
 /* Colors and typography now live in brand.css (single source of truth). */
 /* This file only holds page-layout rules that are not brand-related. */
 
-/* Legacy confirmation-style pages (tickets/base.html) expect centered copy by default. */
-body {
-  text-align: center;
-}
-
 .small-title {
   font-size: 1.625rem;
   font-style: normal;

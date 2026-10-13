@@ -6,7 +6,7 @@ from django.views.generic import RedirectView
 from user_profile.views import my_ticket_view, profile_view, delete_account_view
 
 urlpatterns = [
-    path('favicon.ico', RedirectView.as_view(url='/static/img/favicon.png', permanent=True)),
+    path('favicon.ico', RedirectView.as_view(url='/static/img/favicon.png?v=2', permanent=False)),
     path('admin/', admin.site.urls),
     path('mi-cuenta/', include('allauth.urls')),
     path('mi-cuenta/', include('caja.urls')),

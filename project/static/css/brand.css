@@ -2,6 +2,17 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Tables: left-align text (headers included) instead of the default/inherited
+   center alignment; .text-center utility still wins via Bootstrap's !important. */
+.table th,
+.table td,
+table th,
+table td {
+  text-align: left;
 }
 
 :root {
@@ -67,7 +78,6 @@ h5,
 h6 {
   font-family: "Anton", sans-serif;
   font-weight: 700;
-  letter-spacing: -0.10em;
   line-height: 1.1;
   text-transform: uppercase;
 }
@@ -108,37 +118,47 @@ footer {
 }
 
 .header-admin {
-  background: var(--color-accent) !important;
+  background: var(--color-muted) !important;
 }
 
 .mode-toggle {
   display: inline-flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 999px;
   padding: 3px;
   gap: 2px;
 }
 
-.mode-toggle a {
-  padding: 0.35rem 0.9rem;
+.mode-toggle a,
+.mode-toggle a:link,
+.mode-toggle a:visited {
+  padding: 0.4rem 1rem;
   border-radius: 999px;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-family: 'Anton', sans-serif;
+  font-weight: 200;
+  font-size: 0.85rem;
+  text-transform: uppercase;
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.7) !important;
   transition: background 0.2s ease, color 0.2s ease;
   white-space: nowrap;
 }
 
-.mode-toggle a.active {
+.mode-toggle a.active,
+.mode-toggle a.active:visited {
   background: var(--color-light);
-  color: var(--color-dark);
+  color: var(--color-dark) !important;
+}
+
+.header-admin .mode-toggle a.active,
+.header-admin .mode-toggle a.active:visited {
+  background: var(--color-dark);
+  color: var(--color-light) !important;
 }
 
 .mode-toggle a:not(.active):hover {
-  color: #fff;
+  color: #fff !important;
 }
 
 .navbar .navbar-brand,
@@ -152,28 +172,28 @@ footer {
   text-decoration: none;
 }
 
-.nav-item {
+header .nav-item {
   border-right: 1px solid rgba(255, 255, 255, 0.3);
   padding-right: 1rem;
   padding-left: 1rem;
 }
 
-.nav-item:first-child {
+header .nav-item:first-child {
   padding-left: 0;
 }
 
-.nav-item:last-child {
+header .nav-item:last-child {
   border-right: none;
   padding-right: 0;
 }
 
-.nav-item.no-border {
+header .nav-item.no-border {
   border-right: none;
 }
 
 .navbar .nav-link,
 .navbar-nav .nav-link,
-.nav-item .nav-link {
+header .nav-item .nav-link {
   display: inline-flex;
   align-items: center;
   height: 100%;
@@ -181,7 +201,6 @@ footer {
   padding: 0.5rem 0.8rem;
   font-family: 'Anton', sans-serif;
   font-weight: 200;
-  letter-spacing: -0.01em;
   text-transform: uppercase;
   line-height: 1.1;
   font-size: 0.9rem;
@@ -191,12 +210,18 @@ footer {
   }
 }
 
-.nav-link:focus,
-.nav-link:hover {
+header .nav-link:focus,
+header .nav-link:hover {
   color: #fff;
 }
 
-.nav-item:not(.no-border):not(:first-child):before {
+header .nav-link.active {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+
+header .nav-item:not(.no-border):not(:first-child):before {
   content: "|";
   color: #fff;
   position: absolute;
@@ -205,12 +230,20 @@ footer {
   transform: translateY(-50%);
 }
 
-.nav-item.d-none + .nav-item:before {
+header .nav-item.d-none + .nav-item:before {
   content: none;
 
   @media (min-width: 768px) {
     content: "|";
   }
+}
+
+.nav-tabs .nav-link {
+  color: #6c757d;
+}
+
+.nav-tabs .nav-link.active {
+  color: #1e1e1e;
 }
 
 .hero {
@@ -458,6 +491,17 @@ h1 {
   font-weight: 600;
 }
 
+/* Page titles: left-align by default; .text-center utility still wins (!important). */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-align: left;
+  margin-left: 0 !important;
+}
+
 .title h1 {
   line-height: 3.7rem;
 }
@@ -498,6 +542,7 @@ dl {
     th,
     td {
       padding: 1rem 2rem;
+      vertical-align: middle;
     }
     border: 1px solid #d9d9d9;
   }
@@ -944,7 +989,8 @@ dl {
   }
 }
 
-.form-control {
+.form-control,
+.form-select {
   height: 52px;
   line-height: 1;
 }

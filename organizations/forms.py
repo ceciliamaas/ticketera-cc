@@ -32,7 +32,7 @@ class EventForm(forms.ModelForm):
             'start', 'end',
             'max_tickets', 'max_tickets_per_order',
             'apto_menores',
-            'header_image', 'description',
+            'gallery_image', 'header_image', 'description',
             'is_recurring',
             'status',
         ]
@@ -49,7 +49,8 @@ class EventForm(forms.ModelForm):
             'is_recurring': 'Evento recurrente',
             'max_tickets': 'Máximo de tickets totales',
             'max_tickets_per_order': 'Máximo de tickets por orden',
-            'header_image': 'Imagen de portada',
+            'gallery_image': 'Imagen para galería de eventos (poster)',
+            'header_image': 'Banner para página del evento',
             'description': 'Descripción',
         }
         help_texts = {
@@ -61,7 +62,8 @@ class EventForm(forms.ModelForm):
             'address': 'Dirección física del lugar.',
             'ciudad': 'Ciudad donde se realiza el evento.',
             'location_url': 'Enlace al lugar (ej. Google Maps)',
-            'header_image': 'Tamaño recomendado: 1666 × 500 px. Si no se carga, se usará la imagen de la organización.',
+            'gallery_image': 'Tamaño recomendado: 1080 × 1350 px. Se muestra en la galería de eventos. Si no se carga, se usará el banner.',
+            'header_image': 'Tamaño recomendado: 1666 × 500 px. Se muestra como encabezado de la página del evento. Si no se carga, se usará una imagen por defecto.',
             'max_tickets': 'Límite global de tickets para este evento.',
             'max_tickets_per_order': 'Opcional. Cantidad máxima por orden de compra.',
             'apto_menores': 'Marcar si el evento es apto para menores de 18 años.',

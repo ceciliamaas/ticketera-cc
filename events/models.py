@@ -75,7 +75,8 @@ class Event(BaseModel):
     )
 
     # homepage
-    header_image = models.ImageField(upload_to='events/heros', blank=True, null=True, help_text=u"Dimensions: 1666px x 500px. If left empty, the organization's photo will be used.")
+    header_image = models.ImageField(upload_to='events/heros', blank=True, null=True, help_text=u"Banner de la página del evento. Dimensions: 1666px x 500px. If left empty, a default banner will be used.")
+    gallery_image = models.ImageField(upload_to='events/gallery', blank=True, null=True, help_text=u"Imagen para la galería de eventos. Dimensions: 1080px x 1350px. If left empty, the banner will be used.")
     description = models.TextField()
 
     attendee_must_be_registered = models.BooleanField(default=True, help_text="If checked, all attendees must be registered users")

@@ -29,7 +29,7 @@
                         {{ field.label }}
                     </label>
                 </div>
-            {% elif field.name == 'header_image' %}
+            {% elif field.name == 'header_image' or field.name == 'gallery_image' %}
                 <label class="form-label fw-semibold">{{ field.label }}</label>
                 {% if field.value %}
                     <div class="mb-2 d-flex align-items-center gap-2">
@@ -37,10 +37,10 @@
                             {{ field.value }}
                         </a>
                         <button type="button" class="btn btn-sm btn-outline-danger"
-                                onclick="document.getElementById('id_header_image-clear_id').checked=true; this.closest('.mb-2').style.opacity='0.4'; this.textContent='Eliminada al guardar'">
+                                onclick="document.getElementById('id_{{ field.name }}-clear_id').checked=true; this.closest('.mb-2').style.opacity='0.4'; this.textContent='Eliminada al guardar'">
                             &times; Eliminar
                         </button>
-                        <input type="checkbox" name="header_image-clear" id="id_header_image-clear_id" class="d-none">
+                        <input type="checkbox" name="{{ field.name }}-clear" id="id_{{ field.name }}-clear_id" class="d-none">
                     </div>
                 {% endif %}
                 <div>{{ field }}</div>

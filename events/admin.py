@@ -58,7 +58,7 @@ class EventAdmin(admin.ModelAdmin):
         'start', 'is_recurring',
         'max_tickets', 'max_tickets_per_order',
         'apto_menores',
-        'header_image', 'description',
+        'gallery_image', 'header_image', 'description',
     )
 
     def get_queryset(self, request):
@@ -118,15 +118,3 @@ class EventAdmin(admin.ModelAdmin):
         if org.location_url:
             initial.setdefault('location_url', org.location_url)
         return initial
-
-    def save_model(self, request, obj, form, change):
-        # On new events: if no image was uploaded, inherit from the organization's photo
-        if not change and not obj.header_image and obj.organization_id:
-            from organizations.models import Organization
-            try:
-                org = Organization.objects.get(pk=obj.organization_id)
-                if org.photo:
-                    obj.header_image = org.photo.name  # reuse same file path, no re-upload
-            except Organization.DoesNotExist:
-                pass
-        super().save_model(request, obj, form, change)

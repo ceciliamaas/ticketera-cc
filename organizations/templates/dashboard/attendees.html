@@ -1,0 +1,103 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Asistentes — {{ organization.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="mb-0">Asistentes de {{ organization.name }}</h2>
+        <p class="text-muted mb-0">Registro de usuarios y entradas compradas en todos los eventos.</p>
+    </div>
+    <a class="btn btn-outline-secondary"
+       href="{% url 'dashboard_attendees_export' org_slug=organization.slug %}?view={{ view_mode }}&event={{ selected_event_id }}&q={{ search|urlencode }}">
+        <i class="fa-solid fa-file-csv"></i> Exportar CSV
+    </a>
+</div>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link{% if view_mode == 'summary' %} active{% endif %}"
+           href="?view=summary&event={{ selected_event_id }}&q={{ search|urlencode }}">Resumen por persona</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link{% if view_mode == 'detail' %} active{% endif %}"
+           href="?view=detail&event={{ selected_event_id }}&q={{ search|urlencode }}">Detalle por evento</a>
+    </li>
+</ul>
+
+<form method="get" class="row g-2 mb-3">
+    <input type="hidden" name="view" value="{{ view_mode }}">
+    <div class="col-sm-4">
+        <select name="event" class="form-select" onchange="this.form.submit()">
+            <option value="">Todos los eventos</option>
+            {% for event in events %}
+            <option value="{{ event.pk }}" {% if selected_event_id|stringformat:"s" == event.pk|stringformat:"s" %}selected{% endif %}>{{ event.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-sm-4">
+        <input type="text" name="q" class="form-control" placeholder="Buscar por nombre o email" value="{{ search }}">
+    </div>
+    <div class="col-sm-auto">
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a href="?view={{ view_mode }}" class="btn btn-outline-secondary">Limpiar</a>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Listado</span>
+        <span class="badge bg-secondary">{{ total_count }} registro(s)</span>
+    </div>
+    {% if page_obj.object_list %}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    {% if view_mode == 'detail' %}
+                    <th>Evento</th>
+                    <th>Fecha del evento</th>
+                    <th>Fecha de compra</th>
+                    {% else %}
+                    <th>Eventos a los que asistió</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in page_obj.object_list %}
+                <tr>
+                    <td>{{ row.name }}</td>
+                    <td>{{ row.email }}</td>
+                    {% if view_mode == 'detail' %}
+                    <td>{{ row.event_name }}</td>
+                    <td>{{ row.event_date|date:"d/m/Y H:i" }}</td>
+                    <td>{{ row.purchase_date|date:"d/m/Y H:i" }}</td>
+                    {% else %}
+                    <td>{{ row.event_count }}</td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination mb-0 justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?view={{ view_mode }}&event={{ selected_event_id }}&q={{ search|urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?view={{ view_mode }}&event={{ selected_event_id }}&q={{ search|urlencode }}&page={{ page_obj.next_page_number }}">Siguiente</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="card-body text-muted">No hay asistentes registrados todavía.</div>
+    {% endif %}
+</div>
+{% endblock %}
+

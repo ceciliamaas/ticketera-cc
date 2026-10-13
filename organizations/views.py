@@ -1,12 +1,15 @@
+import csv
 import logging
 import urllib.parse
 
 import requests
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.contrib.auth.models import User
 from django.db import models
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.urls import reverse
@@ -260,6 +263,126 @@ def dashboard_event_reservas(request, org_slug, event_id):
         'invitations': invitations,
         'attendees': attendees,
     })
+
+
+def _attendees_queryset(organization, get_params):
+    """Shared filtering for the attendee registry view and its export."""
+    from tickets.models import Order, NewTicket
+    tickets = (
+        NewTicket.objects.filter(
+            order__event__organization=organization,
+            order__status=Order.OrderStatus.CONFIRMED,
+        )
+        .select_related('event', 'order', 'holder')
+        .order_by('-created_at')
+    )
+    event_id = get_params.get('event')
+    if event_id:
+        tickets = tickets.filter(event_id=event_id)
+    search = get_params.get('q', '').strip()
+    if search:
+        tickets = tickets.filter(
+            models.Q(order__first_name__icontains=search)
+            | models.Q(order__last_name__icontains=search)
+            | models.Q(order__email__icontains=search)
+            | models.Q(holder__first_name__icontains=search)
+            | models.Q(holder__last_name__icontains=search)
+            | models.Q(holder__email__icontains=search)
+        )
+    return tickets
+
+
+def _attendee_detail_rows(tickets):
+    """One row per ticket: name, email, event, event date, purchase date."""
+    rows = []
+    for ticket in tickets:
+        order = ticket.order
+        if ticket.holder and (ticket.holder.first_name or ticket.holder.last_name):
+            first_name, last_name = ticket.holder.first_name, ticket.holder.last_name
+        else:
+            first_name, last_name = order.first_name, order.last_name
+        email = (ticket.holder.email if ticket.holder else '') or order.email
+        rows.append({
+            'name': f'{first_name} {last_name}'.strip(),
+            'email': email,
+            'event_id': ticket.event_id,
+            'event_name': ticket.event.name,
+            'event_date': ticket.event.start,
+            'purchase_date': ticket.created_at,
+        })
+    return rows
+
+
+def _attendee_summary_rows(detail_rows):
+    """One row per person (grouped by email) with the number of distinct events attended."""
+    people = {}
+    for row in detail_rows:
+        key = row['email'].strip().lower() or row['name'].strip().lower()
+        person = people.setdefault(key, {'name': row['name'], 'email': row['email'], 'event_ids': set()})
+        if row['name'] and not person['name']:
+            person['name'] = row['name']
+        person['event_ids'].add(row['event_id'])
+    rows = [
+        {'name': p['name'], 'email': p['email'], 'event_count': len(p['event_ids'])}
+        for p in people.values()
+    ]
+    rows.sort(key=lambda r: r['name'].lower())
+    return rows
+
+
+@login_required
+def dashboard_attendees(request, org_slug):
+    """Registry of attendees: 'summary' (one row per person) or 'detail' (one row per ticket)."""
+    organization = get_authorized_organization(request.user, org_slug, min_role='admin')
+    tickets = _attendees_queryset(organization, request.GET)
+    view_mode = request.GET.get('view') if request.GET.get('view') in ('summary', 'detail') else 'summary'
+    detail_rows = _attendee_detail_rows(tickets)
+    rows = detail_rows if view_mode == 'detail' else _attendee_summary_rows(detail_rows)
+
+    paginator = Paginator(rows, 100)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    events = Event.objects.filter(organization=organization).order_by('-start')
+
+    return render(request, 'dashboard/attendees.html', {
+        'organization': organization,
+        'page_obj': page_obj,
+        'events': events,
+        'selected_event_id': request.GET.get('event', ''),
+        'search': request.GET.get('q', ''),
+        'view_mode': view_mode,
+        'total_count': len(rows),
+    })
+
+
+@login_required
+def dashboard_attendees_export(request, org_slug):
+    """CSV export matching the active view (summary per person, or detail per ticket)."""
+    organization = get_authorized_organization(request.user, org_slug, min_role='admin')
+    tickets = _attendees_queryset(organization, request.GET)
+    view_mode = request.GET.get('view') if request.GET.get('view') in ('summary', 'detail') else 'summary'
+    detail_rows = _attendee_detail_rows(tickets)
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="asistentes-{organization.slug}-{view_mode}.csv"'
+    response.write('\ufeff')  # BOM so Excel renders accented characters correctly
+    writer = csv.writer(response)
+
+    if view_mode == 'detail':
+        writer.writerow(['Nombre', 'Email', 'Evento', 'Fecha del evento', 'Fecha de compra'])
+        for row in detail_rows:
+            writer.writerow([
+                row['name'],
+                row['email'],
+                row['event_name'],
+                timezone.localtime(row['event_date']).strftime('%d/%m/%Y %H:%M') if row['event_date'] else '',
+                timezone.localtime(row['purchase_date']).strftime('%d/%m/%Y %H:%M') if row['purchase_date'] else '',
+            ])
+    else:
+        writer.writerow(['Nombre', 'Email', 'Cantidad de eventos'])
+        for row in _attendee_summary_rows(detail_rows):
+            writer.writerow([row['name'], row['email'], row['event_count']])
+    return response
 
 
 @login_required

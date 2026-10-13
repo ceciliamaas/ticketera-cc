@@ -16,17 +16,17 @@
                         <div class="col-lg-6 col-md-6 col-sm-12 mb-5">
                             <div class="card shadow-sm event-card">
                                 <!-- Image at full width -->
-                                {% with hero=event.header_image|default:event.organization.photo %}
+                                {% with hero=event.gallery_image|default:event.header_image %}
                                 {% if hero %}
                                     <img src="{{ hero.url }}" 
                                          class="card-img-top" 
                                          alt="{{ event.name }}"
                                          style="height: 150px; object-fit: contain; background-color: #f8f9fa;">
                                 {% else %}
-                                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
-                                         style="height: 150px;">
-                                        <span class="text-muted">{{ event.name }}</span>
-                                    </div>
+                                    <img src="{% static 'img/default_galeria.png' %}"
+                                         class="card-img-top" 
+                                         alt="{{ event.name }}"
+                                         style="height: 150px; object-fit: contain; background-color: #f8f9fa;">
                                 {% endif %}
                                 {% endwith %}
                                 

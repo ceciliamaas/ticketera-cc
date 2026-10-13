@@ -2161,7 +2161,7 @@ def event_management_view(request, event_slug):
             model = Event
             fields = [
                 'name', 'description', 'location', 'address', 'ciudad', 'location_url',
-                'start', 'end', 'header_image',
+                'start', 'end', 'gallery_image', 'header_image',
                 'max_tickets', 'venue_capacity',
                 'attendee_must_be_registered', 'apto_menores'
             ]

@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Anton&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/brand.css' %}">
     <link rel="stylesheet" href="{% static 'css/global.css' %}">
-    <link rel="icon" href="{% static 'img/favicon.png' %}" type="image/png">
+    <link rel="icon" href="{% static 'img/favicon.png' %}?v=2" type="image/png">
 </head>
 <body class="d-flex flex-column min-vh-100">
 <header class="header-admin w-100 d-flex justify-content-between align-items-center px-4">
@@ -35,6 +35,7 @@
             <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_su_settings' %} active{% endif %}" href="{% url 'dashboard_su_settings' %}">Gestionar organización</a></li>
         {% elif organization %}
             <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_event_list' or url_name == 'dashboard_event_create' or url_name == 'dashboard_event_edit' or url_name == 'dashboard_event_reservas' %} active{% endif %}" href="{% url 'dashboard_event_list' org_slug=organization.slug %}">Gestionar eventos</a></li>
+            <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_attendees' %} active{% endif %}" href="{% url 'dashboard_attendees' org_slug=organization.slug %}">Asistentes</a></li>
             <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_members' or url_name == 'dashboard_member_add' or url_name == 'dashboard_member_remove' or url_name == 'dashboard_invitation_cancel' %} active{% endif %}" href="{% url 'dashboard_members' org_slug=organization.slug %}">Gestionar miembros</a></li>
             <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_org_edit' or url_name == 'dashboard_mp_connect' or url_name == 'dashboard_mp_oauth_start' or url_name == 'dashboard_mp_disconnect' %} active{% endif %}" href="{% url 'dashboard_org_edit' org_slug=organization.slug %}">Gestionar organización</a></li>
         {% endif %}
@@ -77,6 +78,7 @@
             <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_su_settings' %} active{% endif %}" href="{% url 'dashboard_su_settings' %}">Gestionar organización</a></li>
         {% elif organization %}
             <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_event_list' or url_name == 'dashboard_event_create' or url_name == 'dashboard_event_edit' or url_name == 'dashboard_event_reservas' %} active{% endif %}" href="{% url 'dashboard_event_list' org_slug=organization.slug %}">Gestionar eventos</a></li>
+            <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_attendees' %} active{% endif %}" href="{% url 'dashboard_attendees' org_slug=organization.slug %}">Asistentes</a></li>
             <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_members' or url_name == 'dashboard_member_add' or url_name == 'dashboard_member_remove' or url_name == 'dashboard_invitation_cancel' %} active{% endif %}" href="{% url 'dashboard_members' org_slug=organization.slug %}">Gestionar miembros</a></li>
             <li class="nav-item"><a class="nav-link{% if url_name == 'dashboard_org_edit' or url_name == 'dashboard_mp_connect' or url_name == 'dashboard_mp_oauth_start' or url_name == 'dashboard_mp_disconnect' %} active{% endif %}" href="{% url 'dashboard_org_edit' org_slug=organization.slug %}">Gestionar organización</a></li>
         {% endif %}
