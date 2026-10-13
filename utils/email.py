@@ -13,7 +13,8 @@ def send_mail(*args, **kwargs):
         kwargs['context'] = {}
 
     kwargs['context'].update({
-        'base_url': settings.APP_URL,
+        # Strip trailing slash: email templates concatenate base_url directly with a leading-slash path.
+        'base_url': settings.APP_URL.rstrip('/'),
     })
 
     if 'from_email' not in kwargs:
