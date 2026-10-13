@@ -242,7 +242,8 @@ else:
 
 EMAIL_HOST = os.environ.get('EMAIL_HOST')
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+# Gmail displays app passwords grouped with spaces for readability; strip them since the real secret has none.
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '').replace(' ', '')
 EMAIL_PORT = os.environ.get('EMAIL_PORT')
 EMAIL_USE_TLS = True
 
@@ -264,7 +265,7 @@ SOCIALACCOUNT_PROVIDERS = {
         ],
         'APP': {
             'client_id': os.environ.get('GOOGLE_CLIENT_ID', ''),
-            'secret': os.environ.get('GOOGLE_SECRET', '')
+            'secret': os.environ.get('GOOGLE_CLIENT_SECRET', '')
         }
     }
 }

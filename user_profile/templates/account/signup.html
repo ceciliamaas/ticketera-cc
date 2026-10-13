@@ -11,6 +11,19 @@
                         Ya tenés cuenta?
                         <a href="{% url 'account_login' %}" class="text-primary">Inicia sesión</a>
                     </div>
+                    <a href="{% provider_login_url 'google' %}"
+                       class="btn btn-google w-100 d-flex align-items-center justify-content-center">
+                        <img src="{% static 'img/google.png' %}"
+                             alt="Google"
+                             class="me-2"
+                             style="width: 20px; height: 20px">
+                        <span>Registrate con Google</span>
+                    </a>
+                    <div class="d-flex align-items-center w-100 mb-3">
+                        <div class="flex-grow-1 border-top"></div>
+                        <span class="mx-3">o</span>
+                        <div class="flex-grow-1 border-top"></div>
+                    </div>
                     <form method="post" action="{% url 'account_signup' %}" autocomplete="off" id="signup-form">
                         {% csrf_token %}
                         <div class="form-group d-flex flex-column w-100 gap-3">
