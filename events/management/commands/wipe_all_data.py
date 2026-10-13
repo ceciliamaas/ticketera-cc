@@ -134,10 +134,19 @@ class Command(BaseCommand):
             keep_user.is_staff = True
             keep_user.is_active = True
             keep_user.save(update_fields=['is_superuser', 'is_staff', 'is_active'])
-            EmailAddress.objects.update_or_create(
-                user=keep_user, email=keep_user.email,
-                defaults={'verified': True, 'primary': True},
-            )
+            # Clear primary flags first: unique_primary_email allows only one per user,
+            # and the existing row's email may not match User.email exactly (casing, etc).
+            EmailAddress.objects.filter(user=keep_user).update(primary=False)
+            email_obj = EmailAddress.objects.filter(user=keep_user, email__iexact=keep_user.email).first()
+            if email_obj:
+                email_obj.email = keep_user.email
+                email_obj.verified = True
+                email_obj.primary = True
+                email_obj.save(update_fields=['email', 'verified', 'primary'])
+            else:
+                EmailAddress.objects.create(
+                    user=keep_user, email=keep_user.email, verified=True, primary=True,
+                )
 
         self.stdout.write(self.style.SUCCESS(
             f'Done. All data wiped except {keep_user.email!r} (verified superuser).'
