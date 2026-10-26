@@ -16,6 +16,10 @@ CSRF_TRUSTED_ORIGINS = [f'https://{CUSTOM_DOMAIN}']
 if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 
+# Always point links in emails/pages to the custom domain, never the onrender.com one,
+# regardless of what APP_URL is set to in the environment.
+APP_URL = f'https://{CUSTOM_DOMAIN}'
+
 # Mandatory once EMAIL_HOST is configured (SMTP); falls back to 'none' if no email provider is set up.
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory' if os.environ.get('EMAIL_HOST') else 'none'
 if os.environ.get('EMAIL_HOST'):
