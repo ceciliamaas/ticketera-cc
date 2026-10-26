@@ -194,7 +194,7 @@ DATABASES = {
 4. **Configurar variables**:
    - `GOOGLE_CLIENT_ID`
    - `GOOGLE_CLIENT_SECRET`
-5. **Agregar URI de redirección**: `{tu_url_local}/accounts/google/login/callback/` 🔄
+5. **Agregar URI de redirección**: `{tu_url_local}/mi-cuenta/google/login/callback/` 🔄
 
 #### 📧 Testing de Emails
 

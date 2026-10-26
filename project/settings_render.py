@@ -20,6 +20,11 @@ if RENDER_EXTERNAL_HOSTNAME:
 # regardless of what APP_URL is set to in the environment.
 APP_URL = f'https://{CUSTOM_DOMAIN}'
 
+# Render terminates TLS at its proxy and forwards plain HTTP; without this, request.is_secure()
+# is always False, so allauth builds http:// OAuth callback URLs that Google rejects (redirect_uri_mismatch).
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
 # Mandatory once EMAIL_HOST is configured (SMTP); falls back to 'none' if no email provider is set up.
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory' if os.environ.get('EMAIL_HOST') else 'none'
 if os.environ.get('EMAIL_HOST'):
