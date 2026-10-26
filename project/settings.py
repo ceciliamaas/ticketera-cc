@@ -101,6 +101,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'auditlog.middleware.AuditlogMiddleware',
     "allauth.account.middleware.AccountMiddleware",
+    'organizations.middleware.AcceptPendingInvitationsMiddleware',
     'tickets.middleware.ProfileCompletionMiddleware',
     'tickets.middleware.DeviceDetectionMiddleware'
 
