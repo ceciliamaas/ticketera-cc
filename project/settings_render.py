@@ -7,13 +7,14 @@ DEBUG = False
 
 # Render sets this automatically; also allow custom domain
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '')
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+CUSTOM_DOMAIN = 'entradas.gleyzercultura.com.ar'
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', CUSTOM_DOMAIN]
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-# Add any custom domain here:
-# ALLOWED_HOSTS.append('tu-dominio.com')
 
-CSRF_TRUSTED_ORIGINS = [f'https://{RENDER_EXTERNAL_HOSTNAME}'] if RENDER_EXTERNAL_HOSTNAME else []
+CSRF_TRUSTED_ORIGINS = [f'https://{CUSTOM_DOMAIN}']
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 
 # Mandatory once EMAIL_HOST is configured (SMTP); falls back to 'none' if no email provider is set up.
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory' if os.environ.get('EMAIL_HOST') else 'none'

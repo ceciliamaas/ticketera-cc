@@ -13,6 +13,8 @@ services:
         generateValue: true
       - key: DEBUG
         value: "False"
+      - key: APP_URL
+        value: "https://entradas.gleyzercultura.com.ar"
       - key: DB_HOST
         fromDatabase:
           name: ticketera-db
