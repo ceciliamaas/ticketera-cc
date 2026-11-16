@@ -85,11 +85,10 @@ class CheckoutTicketSelectionForm(forms.Form):
             ticket_types = (TicketType.objects
                           .filter(event=self.event)
                           .filter(Q(date_from__lte=timezone.now()) | Q(date_from__isnull=True))
-                          .filter(Q(date_to__gte=timezone.now()) | Q(date_to__isnull=True))
-                          .filter(Q(ticket_count__gt=0) | Q(ticket_count__isnull=True))
                           .filter(is_direct_type=False)
                           .filter(do_not_show_in_checkout=False)
                           .order_by('cardinality', 'price'))
+            # Se incluyen los tipos agotados / con venta finalizada para mostrarlos como tales
             if self.occurrence_date:
                 ticket_types = ticket_types.filter(occurrence_date=self.occurrence_date)
         else:
@@ -106,15 +105,27 @@ class CheckoutTicketSelectionForm(forms.Form):
         if ticket_types.exists():
             for ticket_type in ticket_types:
                 field_name = f'ticket_{ticket_type.id}_quantity'
-                initial_value = initial_data.get(field_name, 0)
+                sale_status = ticket_type.sale_status
+                remaining = ticket_type.tickets_remaining
+                purchasable = sale_status == 'available'
+                initial_value = initial_data.get(field_name, 0) if purchasable else 0
 
                 # Create a form field for each ticket type
-                self.fields[field_name] = forms.IntegerField(
-                    label=f"{ticket_type.name}",
-                    min_value=0,
-                    max_value=ticket_type.ticket_count,
-                    initial=initial_value
-                )
+                # max_value = entradas que quedan en TOTAL de este tipo (no por compra)
+                if purchasable:
+                    self.fields[field_name] = forms.IntegerField(
+                        label=f"{ticket_type.name}",
+                        min_value=0,
+                        max_value=remaining,
+                        initial=initial_value
+                    )
+                else:
+                    self.fields[field_name] = forms.IntegerField(
+                        label=f"{ticket_type.name}",
+                        required=False,
+                        disabled=True,
+                        initial=0,
+                    )
                 
                 # If this is a free ticket (price = 0), add a custom amount field
                 if ticket_type.price == 0:
@@ -137,7 +148,8 @@ class CheckoutTicketSelectionForm(forms.Form):
                     'price': ticket_type.price,
                     'field_name': field_name,
                     'quantity': initial_value,  # Pass the initial value to the template
-                    'ticket_count': ticket_type.ticket_count,
+                    'ticket_count': remaining if purchasable else 0,
+                    'sale_status': sale_status,
                     'is_free_ticket': False,  # Price 0 = free, never a custom amount
                     'ignore_max_amount': ticket_type.ignore_max_amount  # Flag to check if ignores max amount
                 })

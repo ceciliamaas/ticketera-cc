@@ -141,6 +141,47 @@ class TicketType(BaseModel):
         from caja.stock import available_for_ticket_type
         return available_for_ticket_type(self)
 
+    # ── Disponibilidad total del tipo (ticket_count = cupo TOTAL, no por compra) ──
+
+    @property
+    def tickets_sold(self):
+        return NewTicket.objects.filter(ticket_type=self).count()
+
+    @property
+    def tickets_remaining(self):
+        """Entradas que quedan de este tipo (cupo total - emitidas). None = sin límite."""
+        if self.ticket_count is None:
+            return None
+        return max(0, self.ticket_count - self.tickets_sold)
+
+    @property
+    def is_sold_out(self):
+        remaining = self.tickets_remaining
+        return remaining is not None and remaining <= 0
+
+    @property
+    def sales_not_started(self):
+        return bool(self.date_from and self.date_from > timezone.now())
+
+    @property
+    def sales_ended(self):
+        return bool(self.date_to and self.date_to < timezone.now())
+
+    @property
+    def sale_status(self):
+        """'available' | 'sold_out' | 'ended' | 'upcoming'"""
+        if self.sales_ended:
+            return 'ended'
+        if self.sales_not_started:
+            return 'upcoming'
+        if self.is_sold_out:
+            return 'sold_out'
+        return 'available'
+
+    @property
+    def is_purchasable(self):
+        return self.sale_status == 'available'
+
     def get_corresponding_ticket_type(coupon: Coupon):
         return TicketType.objects \
             .annotate(confirmed_tickets=Count('order__ticket', filter=Q(order__status=Order.OrderStatus.CONFIRMED))) \

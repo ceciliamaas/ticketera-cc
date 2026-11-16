@@ -68,7 +68,7 @@
                                     <div class="ticket-card mb-3 p-3 border rounded">
                                         <div class="d-flex flex-column justify-content-between align-items-center gap-2">
                                             <div class="ticket-info text-center">
-                                                <div class="fw-bold">{{ ticket.name }}</div>
+                                                <div class="fw-bold">{{ ticket.name }}{% if ticket.sale_status == 'sold_out' %}<span class="badge bg-secondary ms-1">Agotado</span>{% elif ticket.sale_status == 'ended' %}<span class="badge bg-secondary ms-1">Venta finalizada</span>{% endif %}</div>
                                                 <span style="font-size: 0.85em; color: #666;">{{ ticket.description }}</span>
                                             </div>
                                             <div class="ticket-price text-center">
@@ -80,15 +80,16 @@
                                                     <div class="mb-2 fw-bold">${{ ticket.price|floatformat|intcomma }}</div>
                                                 {% endif %}
                                                 <span class="quantity-controls">
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn" data-ticket-id="{{ ticket.id }}" data-increment="-1">&minus;</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn" data-ticket-id="{{ ticket.id }}" data-increment="-1" {% if ticket.sale_status != 'available' %}disabled{% endif %}>&minus;</button>
                                                     <input type="number"
                                                            name="{{ ticket.field_name }}"
                                                            value="{{ ticket.quantity|default:0 }}"
                                                            min="0"
                                                            max="{{ ticket.ticket_count|default:"" }}"
+                                                           {% if ticket.sale_status != 'available' %}disabled{% endif %}
                                                            class="form-control form-control-sm text-center quantity-input"
                                                            style="width: 60px; display: inline-block;">
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn" data-ticket-id="{{ ticket.id }}" data-increment="1">&plus;</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn" data-ticket-id="{{ ticket.id }}" data-increment="1" {% if ticket.sale_status != 'available' %}disabled{% endif %}>&plus;</button>
                                                 </span>
                                             </div>
                                         </div>
@@ -107,7 +108,7 @@
                                     {% for ticket in ticket_data %}
                                         <tr>
                                             <td class="text-start">
-                                                <div>{{ ticket.name }}</div>
+                                                <div>{{ ticket.name }}{% if ticket.sale_status == 'sold_out' %}<span class="badge bg-secondary ms-1">Agotado</span>{% elif ticket.sale_status == 'ended' %}<span class="badge bg-secondary ms-1">Venta finalizada</span>{% endif %}</div>
                                                 <span style="font-size: 0.85em; color: #666;">{{ ticket.description }}</span>
                                             </td>
                                             <td class="text-end align-middle fw-bold">
@@ -119,15 +120,16 @@
                                             </td>
                                             <td class="text-end align-middle">
                                                 <span class="quantity-controls">
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn" data-ticket-id="{{ ticket.id }}" data-increment="-1">&minus;</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn" data-ticket-id="{{ ticket.id }}" data-increment="-1" {% if ticket.sale_status != 'available' %}disabled{% endif %}>&minus;</button>
                                                     <input type="number"
                                                            name="{{ ticket.field_name }}"
                                                            value="{{ ticket.quantity|default:0 }}"
                                                            min="0"
                                                            max="{{ ticket.ticket_count|default:"" }}"
+                                                           {% if ticket.sale_status != 'available' %}disabled{% endif %}
                                                            class="form-control form-control-sm text-center quantity-input"
                                                            style="width: 60px; display: inline-block;">
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn" data-ticket-id="{{ ticket.id }}" data-increment="1">&plus;</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn" data-ticket-id="{{ ticket.id }}" data-increment="1" {% if ticket.sale_status != 'available' %}disabled{% endif %}>&plus;</button>
                                                 </span>
                                                 {% if ticket.is_free_ticket %}
                                                     <div class="mt-2">

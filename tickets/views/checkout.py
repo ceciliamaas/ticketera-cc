@@ -166,14 +166,19 @@ def order_summary(request, event_slug=None):
                   .filter(event=event)
                   .filter(Q(date_from__lte=timezone.now()) | Q(date_from__isnull=True))
                   .filter(Q(date_to__gte=timezone.now()) | Q(date_to__isnull=True))
-                  .filter(Q(ticket_count__gt=0) | Q(ticket_count__isnull=True))
                   .filter(is_direct_type=False)
                   .filter(do_not_show_in_checkout=False)
                   .order_by('cardinality', 'price'))
 
+    # Solo tipos con entradas disponibles (cupo total del tipo)
+    ticket_types = [tt for tt in ticket_types if not tt.is_sold_out]
+
     for ticket_type in ticket_types:
         field_name = f'ticket_{ticket_type.id}_quantity'
         quantity = ticket_selection.get(field_name, 0)
+        remaining_type = ticket_type.tickets_remaining
+        if remaining_type is not None and quantity > remaining_type:
+            return redirect(f"{reverse('select_tickets')}?event={event.slug}" if event.slug else reverse('select_tickets'))
         price = ticket_type.price or 0
 
         # For free tickets (price = 0), use custom amount
@@ -280,7 +285,7 @@ def order_summary(request, event_slug=None):
             )
             order.save()
 
-            if ticket_types.exists():
+            if ticket_types:
                 order_tickets = [
                     OrderTicket(
                         order=order,

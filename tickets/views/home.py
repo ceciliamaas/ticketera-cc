@@ -20,7 +20,7 @@ def home(request, event_slug=None):
         from django.db.models import Q
         ticket_types = (TicketType.objects
                       .filter(event=event)
-                      .filter(Q(ticket_count__gt=0) | Q(ticket_count__isnull=True))
+                      .filter(Q(date_from__lte=timezone.now()) | Q(date_from__isnull=True))
                       .filter(is_direct_type=False)
                       .filter(do_not_show_in_checkout=False)
                       .order_by('occurrence_date', 'cardinality', 'price'))
@@ -35,13 +35,16 @@ def home(request, event_slug=None):
             if event.start and event.start <= timezone.now():
                 ticket_types = ticket_types.none()
 
+        # Tipos agotados / con venta finalizada se muestran como tales (no se ocultan)
+        ticket_types = list(ticket_types)
         next_ticket_type = None
-        if not ticket_types.exists():
+        if not ticket_types:
             next_ticket_type = TicketType.objects.get_next_ticket_type_available(event)
 
         context.update({
             'coupon': coupon,
             'ticket_types': ticket_types,
+            'any_purchasable': any(tt.is_purchasable for tt in ticket_types),
             'current_event': event,
             'event': event,
         })
